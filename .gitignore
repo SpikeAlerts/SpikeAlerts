@@ -1,0 +1,6 @@
+**.env.*.secret
+*.env.secret
+**/__pycache__
+*.DS_Store
+*.cpython-310.pyc
+**/.ipynb_checkpoints/*

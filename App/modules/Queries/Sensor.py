@@ -1,0 +1,233 @@
+# Functions to work with any sensor in our database
+
+# Data Manipulation
+
+import pandas as pd
+
+# Database
+
+from psycopg2 import sql
+import modules.Basic_PSQL as psql
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Get_Sensor_APIs_Information():
+    '''
+    Gets all sensor type information from our database
+    
+    returns sensor_api_dict
+    formatted as
+
+    {api_name : 
+        {monitor_name : {
+            sensor_type : {
+                pollutant : abbreviated name for pollutant sensor reads
+                metric : a unit to append to readings
+                thresholds : [list of 5 floats corresponding to health benchmarks],
+                radius_meters : integer representing a distance a sensor accurately represents (on an average day),
+                api_fieldname : string to query api for this value
+                }, ...
+            }, ...
+        }, ...
+    }
+    '''
+
+    cmd = sql.SQL('''
+        WITH temp as
+	        (SELECT api_name, monitor_name, sensor_type, json_build_object('pollutant', s.pollutant,
+	                                                                       'metric', s.metric,
+	                                                                       'thresholds', s.thresholds,
+	                                                                       'radius_meters', s.radius_meters,
+	                                                                       'api_fieldname', api_fieldname) as sensor_info_dict
+	        FROM base."Sensor Type Information" as s
+	        GROUP BY (api_name, monitor_name, sensor_type, pollutant, metric, thresholds, radius_meters, api_fieldname)
+        ), monitor_gps as
+	        (
+	        SELECT api_name, monitor_name, json_object_agg(sensor_type, sensor_info_dict) as info_dict
+	        FROM temp
+	        GROUP BY(api_name, monitor_name)
+	        )
+        SELECT api_name, json_object_agg(monitor_name, info_dict) as monitor_dict
+        FROM monitor_gps
+        GROUP BY (api_name);
+        ''')
+
+    response = psql.get_response(cmd)
+
+    # Unpack response into dictionary
+
+    sensor_api_dict = dict(response)
+    
+    return sensor_api_dict   
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,2,3,4], channel_states = [0,1,3]):
+    '''
+    Gets data from sensors in our database (except geometry)
+
+    parameters
+    
+    fields - list of strings - corresponds to fields of the database. Options:
+    
+    sensor_id' serial, -- Our Unique Identifier
+	sensor_type text, -- Relates to above table
+	api_id text, -- The unique identifier for the api
+	name varchar(100), -- A name for the sensor (for humans)
+	date_created timestamp DEFAULT CURRENT_TIMESTAMP,
+	last_seen timestamp DEFAULT CURRENT_TIMESTAMP,
+	last_elevated timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:00',
+	channel_state int, -- Indicates whether the sensor is active or not
+	channel_flags int, -- Indicates whether sensor is depricated
+	altitude int,
+	"last_value" float -- The last value of the sensor
+	
+    sensor_type - string - corresponds to sensor_type in database
+    
+    channel_flags/state - list of integers - used to limit queries to 
+    
+    returns sensors_df with formatted columns
+    '''
+    
+    # Initialize
+    
+    sensors_df = pd.DataFrame()
+    
+    field_options = ['sensor_id', 'sensor_type', 'api_id', 'name',
+                     'date_created', 'last_seen', 'last_elevated',
+                     'channel_state', 'channel_flags', 'altitude', 'last_value'
+                     ]
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                 
+    # Check that given fields are appropriate
+                     
+    if len(set(field_options).intersection(set(fields))) == 0:
+        print('ERROR in internal sensor query. No appropriate fields selected')
+    elif len(set(fields).difference(set(field_options))) > 0:
+        print('ERROR in internal sensor query. Incorrect fields selected')
+    else:
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    
+        # Initialize command
+        
+        cmd = sql.SQL('''SELECT ''')
+        
+        for i, field in enumerate(fields):
+        
+            if i > 0: # Comma separate
+                cmd += sql.SQL(',')
+            
+            cmd += sql.SQL('{}').format(sql.Identifier(field))
+            
+        
+
+        if sensor_type == 'All':
+            cmd += sql.SQL('''FROM "Sensors";''')
+        else:
+            cmd += sql.SQL('''FROM "Sensors" WHERE sensor_type = {}
+            AND channel_state = ANY ( {} ) AND channel_flags = ANY ( {} ); 
+            ''').format(sql.Literal(sensor_type),
+                        sql.Literal(channel_states),
+                        sql.Literal(channel_flags))
+
+        response = psql.get_response(cmd)
+
+        # Unpack response into pandas series
+
+        df = pd.DataFrame(response, columns = fields)
+        
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+
+        # Datatype corrections (for non-strings)
+        
+        if len(df) > 0:
+        
+            # Integers
+            
+            int_cols = {'sensor_id', 'channel_flags', 'channel_state', 'altitude'}
+        
+            for col in set(fields).intersection(int_cols):
+            
+                df[col] = df[col].astype(int)
+        
+            # Datetimes
+            
+            datetime_cols = {'last_seen', 'date_created', 'last_elevated'}
+            
+            for col in set(fields).intersection(datetime_cols):
+            
+                df[col] = pd.to_datetime(df[col])
+            
+            # Floats
+            
+            float_cols = {'current_reading'}
+            
+            for col in set(fields).intersection(float_cols):
+
+                df[col] = df[col].astype(float)
+            
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+         
+        # Copy and return    
+        
+        sensors_df = df.copy()
+    
+    return sensors_df
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Get_Sensor_Types_Ready_to_Update(timezone = 'America/Chicago'):
+    '''
+    Gets the sensor types from "Sensor Type Information" that are ready for a regular update
+    
+    returns a list of sensor_types
+    '''
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    
+    # Make command
+    
+    cmd = sql.SQL('''
+    SELECT sensor_type 
+    FROM base."Sensor Type Information"
+    WHERE last_update + INTERVAL '1 Minutes' * update_frequency < 
+            CURRENT_TIMESTAMP AT TIME ZONE {};''').format(sql.Literal(timezone))
+
+    response = psql.get_response(cmd)
+
+    # Unpack response into list
+
+    sensor_types = [i[0] for i in response] # Unpack results into list
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+    return sensor_types
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Get_not_elevated_sensors(alert_lag, timezone = 'America/Chicago'):
+    '''
+    Gets the sensor types from "Sensor Type Information" that are ready for a regular update
+    
+    returns a list of sensor_types
+    '''
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    
+    # Make command
+    
+    cmd = sql.SQL('''
+    SELECT sensor_id 
+    FROM "Sensors"
+    WHERE last_elevated + INTERVAL '1 Minutes' * {} < 
+            CURRENT_TIMESTAMP AT TIME ZONE {};''').format(sql.Literal(alert_lag),
+                                                          sql.Literal(timezone))
+
+    response = psql.get_response(cmd)
+
+    # Unpack response into list
+
+    sensor_ids = [i[0] for i in response] # Unpack results into list
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+    return sensor_ids
