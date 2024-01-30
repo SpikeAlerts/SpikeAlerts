@@ -123,7 +123,9 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,
         
 
         if sensor_type == 'All':
-            cmd += sql.SQL('''FROM "Sensors";''')
+            cmd += sql.SQL('''FROM "Sensors"
+                              WHERE channel_state = ANY ( {} ) AND channel_flags = ANY ( {} );''').format(sql.Literal(channel_states),
+                        sql.Literal(channel_flags))
         else:
             cmd += sql.SQL('''FROM "Sensors" WHERE sensor_type = {}
             AND channel_state = ANY ( {} ) AND channel_flags = ANY ( {} ); 
