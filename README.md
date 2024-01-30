@@ -4,17 +4,23 @@ We are a collective working to make a text alert and reporting system for Air Qu
 
 ## What is this Repository?
 
-This is a repository to document and develop features for SpikeAlerts. 
+This is a repository to document and develop features for SpikeAlerts. Still a work in process!
 
-Still a work in process, but here's what's in the directory right now:
+Here's what's in the repository right now in order of what must be done to run your own instance of this application:
 
-+ Basic_Python_Requirements.txt - The python requirements for the VM application
++ .env.example - The base environment variables needed for the system to run
++ .env.sensors.example - The environment variables needed for updating the Sensors from their APIs
++ requirements.txt - The Python libraries needed beyond base python 
++ /Database - Files to initialize the database
++ /App - The SpikeAlerts Application. Run with python App/spikealerts.py
+
+<!--+ Basic_Python_Requirements.txt - The python requirements for the VM application
 + Conda_Developer_Environment.yml - Conda environment for all scripts and exploring data
 + .env.example - An example of a .env file that is needed for full functionality
 
 + APP_Documentation/ - A directory that includes all scripts and Jupyter notebooks showing how they work
     + App/ - A copy of the app that is currently running on a Heroku Dyno
-+ Database/ - A directory with the Database information and documentation
++ Database/ - A directory with the Database information and documentation-->
 
 <!--## Installation Instructions
 
