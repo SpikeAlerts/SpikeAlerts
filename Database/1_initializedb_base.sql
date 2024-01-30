@@ -93,11 +93,11 @@ CREATE TABLE "Sensors" -- Storage for all sensors
 	date_created timestamp DEFAULT CURRENT_TIMESTAMP,
 	last_seen timestamp DEFAULT CURRENT_TIMESTAMP,
 	last_elevated timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:01',
-	channel_state int DEFAULT 1, -- Indicates whether the sensor is active or not,
-	channel_flags int DEFAULT 0, -- Indicates whether sensor is depricated
+	channel_state int DEFAULT 1, -- Indicates whether the sensor is active (1) or not (0),
+	channel_flags int DEFAULT 0, -- Indicates whether sensor is depricated, 0 = not degraded, 1 = channel a degraded, 2 = channel b degraded, 3 = degraded, 4 = newly flagged
 	altitude int,
 	current_reading float DEFAULT -1 -- The last value seen of the sensor
---	geometry geometry -- A Point
+--	geometry geometry -- A Point, added later in this script
 );
 
 -- Alerts
