@@ -22,6 +22,7 @@ def Get_Sensor_APIs_Information():
     {api_name : 
         {monitor_name : {
             sensor_type : {
+                update_frequency : minutes between regular updates
                 pollutant : abbreviated name for pollutant sensor reads
                 metric : a unit to append to readings
                 thresholds : [list of 5 floats corresponding to health benchmarks],
@@ -35,13 +36,14 @@ def Get_Sensor_APIs_Information():
 
     cmd = sql.SQL('''
         WITH temp as
-	        (SELECT api_name, monitor_name, sensor_type, json_build_object('pollutant', s.pollutant,
+	        (SELECT api_name, monitor_name, sensor_type, json_build_object('update_frequency', s.update_frequency,
+                                                                           'pollutant', s.pollutant,
 	                                                                       'metric', s.metric,
 	                                                                       'thresholds', s.thresholds,
 	                                                                       'radius_meters', s.radius_meters,
 	                                                                       'api_fieldname', api_fieldname) as sensor_info_dict
 	        FROM base."Sensor Type Information" as s
-	        GROUP BY (api_name, monitor_name, sensor_type, pollutant, metric, thresholds, radius_meters, api_fieldname)
+	        GROUP BY (api_name, monitor_name, sensor_type, update_frequency, pollutant, metric, thresholds, radius_meters, api_fieldname)
         ), monitor_gps as
 	        (
 	        SELECT api_name, monitor_name, json_object_agg(sensor_type, sensor_info_dict) as info_dict

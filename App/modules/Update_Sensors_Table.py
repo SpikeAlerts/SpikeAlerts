@@ -37,6 +37,7 @@ def workflow(sensors_df, runtime):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
+    update_frequency - int - frequency this sensor is updated
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
@@ -87,7 +88,7 @@ def flag_sensors(sensor_ids):
         WHERE sensor_id = ANY ( {} );
         ''').format(sql.Literal(sensor_ids))
     
-        psql.send_update(cmd, pg_connection_dict)
+        psql.send_update(cmd)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     

@@ -49,6 +49,7 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
+    update_frequency - int - frequency this sensor is updated
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
@@ -59,7 +60,7 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
     
     # Initialize storage
     
-    sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading',
+    sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading', 'update_frequency',
                               'pollutant', 'metric', 'health_descriptor',
                               'radius_meters', 'sensor_status', 'last_elevated']
                              )
@@ -104,7 +105,7 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
         
         # Values straight from sensor_type dictionary
         
-        sensor_dict_vals = ['pollutant', 'metric',
+        sensor_dict_vals = ['update_frequency', 'pollutant', 'metric',
                             'radius_meters']
         for key in sensor_dict_vals:
             merged_df[key] = sensor_dict[key]

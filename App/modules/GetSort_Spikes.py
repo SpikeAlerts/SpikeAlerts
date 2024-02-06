@@ -31,6 +31,7 @@ def workflow(base_config):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
+    update_frequency - int - frequency this sensor is updated
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
@@ -41,7 +42,7 @@ def workflow(base_config):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     # 0 - Initialize storage of above w/ one extra column 'last_elevated' used to determine sensor_status later
 
-    sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading',
+    sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading', 'update_frequency',
                               'pollutant', 'metric', 'health_descriptor',
                               'radius_meters', 'sensor_status', 'last_elevated']
                              )
@@ -79,7 +80,7 @@ def workflow(base_config):
 
         for monitor_name in sensor_api_dict[api_name]:
 
-            # Monitor Dictionary with sensor_types, thresholds, radius_meters, and api_fieldnames
+            # Monitor Dictionary with sensor_types, update_frequencies, thresholds, metric, radius_meters, and api_fieldnames
             monitor_dict = sensor_api_dict[api_name][monitor_name]
             
             # Get the sensor_types to update for this monitor
@@ -183,11 +184,13 @@ def Sort_sensors_df(sensors_df, alert_lag, timezone):
     # D) Ended alerted sensors = set_2 AND set_C
     sensor_id_dict['ended_spike'] = previous_active_spikes.intersection(sensor_id_dict['not_spike'])
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
     # Map the categories to dataframe
+
+    status_write_order = ['not_spike', 'new_spike', 'ongoing_spike', 'flagged', 'ended_spike']
     
-    for status in sensor_id_dict:
+    for status in status_write_order:
         sensor_ids_w_status = sensor_id_dict[status] # Get sensor_ids 
         if len(sensor_ids_w_status)>0:
             is_status = sensors_df.sensor_id.isin(sensor_ids_w_status) # Boolean series
@@ -200,5 +203,3 @@ def Sort_sensors_df(sensors_df, alert_lag, timezone):
     final_sensors_df = sensors_df.drop(columns = ['last_elevated']).copy()
     
     return final_sensors_df
-    
-  
