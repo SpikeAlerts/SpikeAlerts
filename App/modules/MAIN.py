@@ -8,11 +8,11 @@ This function is the workflow of one regular update
                         Returns a pd.dataframe of this called sensors_df
 # 1b = Update_Sensors_Table - Update last_elevated, last_seen, channel_flags, and values
 
- sensors_df column 'sensor_status' is used to inform steps 2-4:
+ sensors_df column 'sensor_status' is used to inform the next steps:
+
+# 2 = Update_Alerts_Tables - Create new alerts, update ongoing alerts, and end old alerts
  
-# 2 = New_Alerts - Update Database & Compose Messages
-# 3 = Ongoing_Alerts - Update Database & Compose Messages
-# 4 = Ended_Alerts - Update Database & Compose Messages
+# 3 = Update_POI_Tables - Updates the POI tables <- if .env has POI_FORM='Something'
 # Finally,
 # 6 = Send_Messages - Sends all messages <- If .env has MESSAGING='Something'
 '''
@@ -22,9 +22,9 @@ This function is the workflow of one regular update
 from modules import Daily_Updates # 0
 from modules import GetSort_Spikes # 1.a
 from modules import Update_Sensors_Table # 1.b
-### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+from modules import Update_Alert_Tables # 2
 
-import os
+### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### The Workflow
 def main(base_config, now, next_system_update):
@@ -53,19 +53,13 @@ def main(base_config, now, next_system_update):
     # 1b) Update our database table "Sensors"
 
     Update_Sensors_Table.workflow(sensors_df, runtime)
-    
-    
-    # # Update last_elevated
-    
-    # if len(spikes_df) > 0:
-        
-    #     Update_last_elevated(spikes_df.sensor_index.to_list(), purpleAir_runtime, pg_connection_dict)
-    
-    # if len(flagged_sensor_ids) > 0:
-    #     # Flag sensors in our database (set channel_flags = 4 for the list of sensor_index)
 
-    #     flag_sensors(flagged_sensor_ids.to_list(), pg_connection_dict)    
+    # ~~~~~~~~~~~~~~~~~~~~~
+
+    # 2) Workflow for updating our database tables "Active Alerts" and "Archived Alerts"
+
+    Update_Alert_Tables.workflow(sensors_df, runtime)
+
     
-    # sensors_dict = Sort_sensor_indices(spikes_df, flagged_sensor_ids, pg_connection_dict)
     
     return next_system_update

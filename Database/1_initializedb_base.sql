@@ -81,7 +81,7 @@ CREATE TABLE "Sensor Type Information" -- This is to keep track of the different
     -- ^ In this order (moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous)
     radius_meters float, -- The max distance this sensor is relevant to (for POIs)
     last_update timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:00', -- Last regular update time
-    update_frequency int -- The frequency for regular updates in minutes
+    update_frequency int -- The frequency for regular updates in minutes, should relate to api_fieldname's time interval
     );
 
 CREATE TABLE "Sensors" -- Storage for all sensors
@@ -105,7 +105,8 @@ CREATE TABLE "Sensors" -- Storage for all sensors
 CREATE TABLE "Active Alerts" -- These are the SpikeAlerts that are currently out
 	(alert_id bigserial, -- Unique identifier for a spike alert
 	 sensor_id int, -- Sensor Unique Identifiers
-	  start_time timestamp,
+	  start_time timestamp, -- The time when sensor values started reporting high (slightly before alert begins)
+	  last_update timestamp, -- last time the alert was updated
 	  avg_reading float, -- Average value registered
 	   max_reading float); -- Maximum value registered
 
