@@ -21,7 +21,7 @@ from importlib import import_module
 
 ## Workflow
 
-def workflow(base_config, runtime):
+def workflow(runtime, timezone):
     '''
     Runs the full workflow to get data from the apis and begins interpretation of the information.  
     
@@ -53,7 +53,7 @@ def workflow(base_config, runtime):
     # 1 - Prepare for API calls
     
     # 1.a - Get the sensor_types ready for update (from "Sensor Type Information")
-    #       All sensors with runtime < last_update + update_frequency
+    #       All sensors with runtime <= last_update + update_frequency
     
     sensor_types_ready_to_update = sensor_query.Get_Sensor_Types_Ready_to_Update(runtime)
     
@@ -98,7 +98,7 @@ def workflow(base_config, runtime):
     
                 # 2.b Call APIs for a regular update
                 temp_sensors_df = import_module(module).Workflow(monitor_dict, monitor_api_df,
-                                             base_config['TIMEZONE']) # Run Regular Update code for monitor
+                                             timezone) # Run Regular Update code for monitor
                                              
                 # Concatenate to sensors_df
                 sensors_df = pd.concat([sensors_df, temp_sensors_df],  ignore_index = True)

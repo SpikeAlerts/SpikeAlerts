@@ -46,12 +46,12 @@ def main(base_config, runtime, next_system_update):
     
     # 1a) Query APIs for current data & Sort Sensors into categories
 
-    sensors_df, sensor_types_updated = GetSort_Spikes.workflow(base_config, runtime)
+    sensors_df, sensor_types_updated = GetSort_Spikes.workflow(runtime, base_config['TIMEZONE'])
 
     if len(sensors_df) > 0:
         # 1b) Update our database tables "Sensors" and "Sensor Type Information"
 
-        Update_Sensor_Tables.workflow(base_config, sensors_df, sensor_types_updated, runtime)
+        Update_Sensor_Tables.workflow(sensors_df, sensor_types_updated, runtime)
 
         # ~~~~~~~~~~~~~~~~~~~~~
 

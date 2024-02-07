@@ -22,7 +22,7 @@ import modules.Sensor_Functions as sensors
 
 ## Workflow
 
-def workflow(base_config, sensors_df, sensor_types_updated, runtime):
+def workflow(sensors_df, sensor_types_updated, runtime):
     '''
     Runs the full workflow to update our database table "Sensors" with the following:
 
