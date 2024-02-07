@@ -22,7 +22,7 @@ import modules.Sensor_Functions as sensors
 
 ## Workflow
 
-def workflow(sensors_df, runtime):
+def workflow(sensors_df, sensor_types_updated, runtime):
     '''
     Runs the full workflow to update our database table "Sensors" with the following:
 
@@ -30,6 +30,8 @@ def workflow(sensors_df, runtime):
     last_elevated - if new/ongoing spikes
     last_seen - if not flagged
     current_reading - for all
+    
+    and "Sensor Type Information" last_updated
     
     Parameters:
     
@@ -44,6 +46,8 @@ def workflow(sensors_df, runtime):
     radius_meters - int - max distance sensor is relevant
     is_flagged - binary - is the sensor flagged?
     sensor_status - text - one of these categories: ordinary, new_spike, ongoing_spike, ended_spike
+    
+    sensor_types_updated - iterable of sensor_types that were updated
     
     runtime - approximate time that the values for above dataframe were acquired
     '''
@@ -73,6 +77,11 @@ def workflow(sensors_df, runtime):
 
     current_reading_update_df = sensors_df[sensors_df.is_flagged == False][['sensor_id', 'current_reading']]
     sensors.Update_Sensors(current_reading_update_df)
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # last_updated ("Sensor Type Information")
+    
+    Update_last_update(sensor_types_updated, runtime)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -134,3 +143,32 @@ def Update_last_seen(sensor_ids, runtime):
                 sql.Literal(sensor_ids))
                 
         psql.send_update(cmd)
+        
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+        
+### Function to update last_update in "Sensor Type Information"
+
+def Update_last_update(sensor_types, runtime):
+    '''
+    This function updates last_update in "Sensor Type Information" for the specified sensor_types
+    
+    parameters:
+    
+    sensor_types - list of strings
+    runtime - datetime object
+    '''
+
+    if len(sensor_types) > 0:
+    
+        sensor_types = list(sensor_types)
+        update_time = runtime.strftime('%Y-%m-%d %H:%M:%S')
+        
+        cmd = sql.SQL('''UPDATE "Sensor Type Information"
+        SET last_update = {}
+        WHERE sensor_type = ANY ( {} );
+        ''').format(sql.Literal(update_time),
+                sql.Literal(sensor_types))
+    
+        psql.send_update(cmd)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`

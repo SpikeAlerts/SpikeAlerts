@@ -82,7 +82,7 @@ def Get_Sensor_Types_Ready_to_Update(runtime):
     
     cmd = sql.SQL('''
     SELECT sensor_type 
-    FROM base."Sensor Type Information"
+    FROM "Sensor Type Information"
     WHERE last_update + INTERVAL '1 Minutes' * update_frequency < {};''').format(sql.Literal(update_time))
 
     response = psql.get_response(cmd)

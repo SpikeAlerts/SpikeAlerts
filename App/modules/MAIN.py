@@ -6,7 +6,7 @@ This function is the workflow of one regular update
 # 0 = Daily Updates - Less regular System-wide updates for Sensors and POIs
 # 1a = GetSort_Spikes - Gets real-time sensors' information & begins interpretation. 
                         Returns a pd.dataframe of this called sensors_df
-# 1b = Update_Sensors_Table - Update last_elevated, last_seen, channel_flags, and values
+# 1b = Update_Sensor_Tables - Update last_elevated, last_seen, channel_flags, and values in "Sensors" and last_update in "Sensor Type Information"
 
  sensors_df column 'sensor_status' is used to inform the next steps:
 
@@ -21,7 +21,7 @@ This function is the workflow of one regular update
 # from modules import Daily_Updates, GetSort_Spikes, New_Alerts, Ongoing_Alerts, Ended_Alerts, Flagged_Sensors, Send_Alerts
 from modules import Daily_Updates # 0
 from modules import GetSort_Spikes # 1.a
-from modules import Update_Sensors_Table # 1.b
+from modules import Update_Sensor_Tables # 1.b
 from modules import Update_Alert_Tables # 2
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,11 +48,11 @@ def main(base_config, now, next_system_update):
     
     # 1a) Query APIs for current data & Sort Sensors into categories
 
-    sensors_df, runtime = GetSort_Spikes.workflow(base_config)
+    sensors_df, sensor_types_updated, runtime = GetSort_Spikes.workflow(base_config)
 
-    # 1b) Update our database table "Sensors"
+    # 1b) Update our database tables "Sensors" and "Sensor Type Information"
 
-    Update_Sensors_Table.workflow(sensors_df, runtime)
+    Update_Sensor_Tables.workflow(sensors_df, sensor_types_updated, runtime)
 
     # ~~~~~~~~~~~~~~~~~~~~~
 
