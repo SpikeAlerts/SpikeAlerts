@@ -79,9 +79,9 @@ def workflow(base_config, sensors_df, sensor_types_updated, runtime):
     sensors.Update_Sensors(current_reading_update_df)
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # last_updated ("Sensor Type Information") with the current time
+    # last_updated ("Sensor Type Information")
     
-    Update_last_update(sensor_types_updated, dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])))
+    Update_last_update(sensor_types_updated, runtime)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 

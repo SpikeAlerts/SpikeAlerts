@@ -83,7 +83,7 @@ def Get_Sensor_Types_Ready_to_Update(runtime):
     cmd = sql.SQL('''
     SELECT sensor_type 
     FROM "Sensor Type Information"
-    WHERE last_update + INTERVAL '1 Minutes' * update_frequency < {};''').format(sql.Literal(update_time))
+    WHERE last_update + INTERVAL '1 Minutes' * update_frequency <= {};''').format(sql.Literal(update_time))
 
     response = psql.get_response(cmd)
 
@@ -230,7 +230,7 @@ def Get_not_elevated_sensors(runtime, alert_lag = 0):
     cmd = sql.SQL('''
     SELECT sensor_id 
     FROM "Sensors"
-    WHERE last_elevated + INTERVAL '1 Minutes' * {} < {};''').format(sql.Literal(alert_lag),
+    WHERE last_elevated + INTERVAL '1 Minutes' * {} <= {};''').format(sql.Literal(alert_lag),
                                                           sql.Literal(update_time))
 
     response = psql.get_response(cmd)
