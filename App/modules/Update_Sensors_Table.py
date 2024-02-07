@@ -42,7 +42,8 @@ def workflow(sensors_df, runtime):
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
-    sensor_status - text - one of these categories: not_spike, new_spike, ongoing_spike, ended_spike, flagged
+    is_flagged - binary - is the sensor flagged?
+    sensor_status - text - one of these categories: ordinary, new_spike, ongoing_spike, ended_spike
     
     runtime - approximate time that the values for above dataframe were acquired
     '''
@@ -50,7 +51,7 @@ def workflow(sensors_df, runtime):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Update channel_flag - if flagged
 
-    flagged_ids = sensors_df[sensors_df.sensor_status == 'flagged'].sensor_id.to_list()
+    flagged_ids = sensors_df[sensors_df.is_flagged == True].sensor_id.to_list()
     flag_sensors(flagged_ids)
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,13 +65,13 @@ def workflow(sensors_df, runtime):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # last_seen - if not flagged
 
-    not_flagged_ids = sensors_df[sensors_df.sensor_status != 'flagged'].sensor_id.to_list()
+    not_flagged_ids = sensors_df[sensors_df.is_flagged == False].sensor_id.to_list()
     Update_last_seen(not_flagged_ids, runtime)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # current_reading - for all
+    # current_reading - for all not flagged 
 
-    current_reading_update_df = sensors_df[['sensor_id', 'current_reading']]
+    current_reading_update_df = sensors_df[sensors_df.is_flagged == False][['sensor_id', 'current_reading']]
     sensors.Update_Sensors(current_reading_update_df)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`

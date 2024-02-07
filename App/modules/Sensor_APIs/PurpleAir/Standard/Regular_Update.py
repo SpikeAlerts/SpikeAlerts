@@ -54,7 +54,7 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
-    sensor_status - text - one of these categories: flagged, not flagged
+    is_flagged - binary - is the sensor flagged?
     last_elevated - text - the last time this sensor was elevated
     '''
     
@@ -62,7 +62,7 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
     
     sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading', 'update_frequency',
                               'pollutant', 'metric', 'health_descriptor',
-                              'radius_meters', 'sensor_status', 'last_elevated']
+                              'radius_meters', 'is_flagged', 'last_elevated']
                              )
     
     # Iterate through sensors on the monitor
@@ -115,11 +115,9 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
         merged_df['health_descriptor'] = sensors.Map_to_Health_Descriptors(merged_df.current_reading,
                                                                    sensor_dict['thresholds'])
                                                               
-        # Sensor status
-        sensor_status_dict = {False : 'not flagged',
-                              True : 'flagged'
-                              }
-        merged_df['sensor_status'] = merged_df.flagged.apply(lambda x: sensor_status_dict[x])
+        # Flagged status
+        
+        merged_df['is_flagged'] = merged_df.flagged.copy()
                  
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
         # Concatenate to sensors_df

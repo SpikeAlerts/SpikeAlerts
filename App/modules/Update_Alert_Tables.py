@@ -31,7 +31,7 @@ def workflow(sensors_df, runtime):
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
-    sensor_status - text - one of these categories: not_spike, new_spike, ongoing_spike, ended_spike, flagged
+    sensor_status - text - one of these categories: new_spike, ongoing_spike, ended_spike, unknown, or ordinary
     
     runtime - approximate time that the values for above dataframe were acquired
     '''

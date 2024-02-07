@@ -36,44 +36,43 @@ def workflow(base_config):
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
-    sensor_status - text - one of these categories: not_spike, new_spike, ongoing_spike, ended_spike, flagged
+    is_flagged - binary - is the sensor flagged?
+    sensor_status - text - one of these categories: ordinary, new_spike, ongoing_spike, ended_spike, 
     '''
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    # 0 - Initialize storage of above w/ one extra column 'last_elevated' used to determine sensor_status later
+    
+    runtime = dt.datetime.now(pytz.timezone(base_config['TIMEZONE']))
+    
+    # 0 - Initialize storage of above w/out sensor_status and one extra column 'last_elevated' used to determine sensor_status later
 
     sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading', 'update_frequency',
                               'pollutant', 'metric', 'health_descriptor',
-                              'radius_meters', 'sensor_status', 'last_elevated']
+                              'radius_meters', 'is_flagged', 'last_elevated']
                              )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     # 1 - Prepare for API calls
     
-    # 1.a Get a dataframe with info necessary for api calls 
-    # Only query for currently active in our database sensors
+    # 1.a - Get the sensor_types ready for update (from "Sensor Type Information")
+    #       All sensors with runtime < last_update + update_frequency
+    
+    sensor_types_ready_to_update = sensor_query.Get_Sensor_Types_Ready_to_Update(runtime)
+    
+    # 1.b Get a dataframe with info necessary for api calls
     # Not flagged (channel_flags = 0, channel_state = 1)
     
-    api_df = sensor_query.Get_Sensor_Info(fields = ['sensor_id', 'sensor_type', 'api_id', 'last_elevated'],
+    api_df = sensor_query.Get_Sensor_Info(fields = ['sensor_id', 'sensor_type', 'api_id', 'last_elevated'], sensor_types = sensor_types_ready_to_update,
                                           channel_flags=[0], channel_states = [1])
 
-    # 1.b See which sensor_types are active
+    # 1.c See which sensor_types_ready_to_update are active
     
-    active_sensor_types = set(api_df.sensor_type.unique()) # The types of sensors that are active (a set)
-
-    # 1.c - Get the sensor_types ready for update (from "Sensor Type Information"
-    
-    sensor_types_ready_to_update = sensor_query.Get_Sensor_Types_Ready_to_Update(base_config['TIMEZONE'])
-    
-    # 1.d - Get sensor_types to update (intersection of 1.b & 1.c)
-    
-    sensor_types_to_update = active_sensor_types.intersection(sensor_types_ready_to_update)
+    sensor_types_to_update = set(api_df.sensor_type.unique()) # The types of sensors that are active (a set)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     # 2 - Query all the apis (if they have a type in 1.d)
-    # and fill in sensors_df (sensor_status not complete, yet only 'flagged' and 'not flagged')
+    # and fill in sensors_df (sensor_status not determined yet)
 
-    runtime = dt.datetime.now(pytz.timezone(base_config['TIMEZONE']))
     sensor_api_dict = sensor_query.Get_Sensor_APIs_Information() # information on the different types of apis/monitors/sensors
 
     for api_name in sensor_api_dict:
@@ -107,11 +106,11 @@ def workflow(base_config):
                 sensors_df = pd.concat([sensors_df, temp_sensors_df],  ignore_index = True)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # 3 - Sort out the sensors_df column 'sensor_status'
+    # 3 - Sort out the sensors_df column 'sensor_status' - IMPROVE: 30 is a hardcoded alert_lag time
     
     if len(sensors_df) > 0:
     
-        sensors_df = Sort_sensors_df(sensors_df, 30, base_config['TIMEZONE'])
+        sensors_df = Sort_sensors_df(sensors_df, 30, runtime)
     
     else:
         print('\n~~~\nWarning: No sensors in database to update. \n\nPlease wait a little longer for a regular update\nor conduct a daily update to pull new sensors from APIs\n~~~\n')
@@ -121,85 +120,90 @@ def workflow(base_config):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 ### Function to sort the sensor indices
     
-def Sort_sensors_df(sensors_df, alert_lag, timezone):
+def Sort_sensors_df(sensors_df, alert_lag, runtime):
     '''
-    This sorts the sensor indices into sets based on if they are not_spike, new_spike, ongoing_spike, ended_spike, flagged
+    This sorts the sensor indices into sets based on if they are ordinary, new_spike, ongoing_spike, ended_spike
     
     Inputs: sensors_df from above, alert_lag (int in minutes to delay ending an alert), pytz timezone
             
-    returns sensors_df with its column 'sensor_status' properly sorted and 'last_elevated' column removed
+    returns final_sensors_df with its column 'sensor_status' properly sorted and 'last_elevated' column removed
     '''
     
-    # All sensor_ids that are being updated
+    # Initialize Storage
     
-    all_sensor_ids = sensors_df.sensor_id.to_list()
+    final_sensors_df = sensors_df.copy()
+    final_sensors_df['sensor_status'] = 'unknown'
+    
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     # Initialize dictionary for mapping sensor_status column
     
-    sensor_id_dict = {'new_spike': set(),
+    sensor_id_dict = {'ordinary': set(), # Overlaps with all the others but is overwritten in above database
+               'new_spike': set(),
                'ongoing_spike': set(),
-               'ended_spike': set(),
-               'flagged': set(sensors_df[sensors_df.sensor_status == 'flagged'].sensor_id),
-               'not_spike': set()
+               'ended_spike': set()
                 }
-
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     # Categorize sensor_ids by above map
     
     # Using set operations between:
     
-    # 1) Spiked from api call
+    # 1) All sensor_ids that are being updated
+    
+    all_sensor_ids = set(sensors_df.sensor_id.to_list())
+    
+    # 2) Spiked from api call
     spike_descriptors = ['unhealthy for sensitive groups', 'unhealthy', 'very unhealthy', 'hazardous']
-    active_spikes = set(sensors_df[sensors_df.health_descriptor.isin(spike_descriptors)
+    spiked_sensors = set(sensors_df[sensors_df.health_descriptor.isin(spike_descriptors)
                                     ].sensor_id) # From most recent api call
     
-    # 2) Previously spiked
-    previous_active_spikes = set(alert_query.Get_previous_active_sensors(all_sensor_ids))
     
-    # 3) Not Recently Elevated = all sensors not elevated in past alert_lag minutes
-    not_previous_elevated = set(sensors_df[sensors_df.last_elevated + dt.timedelta(minutes=alert_lag
-                                    ) < np.datetime64(dt.datetime.now(pytz.timezone(timezone))
-                                )].sensor_id)
+    # 3) Actively alerted sensors (from this api_update)
+    alerted_sensors = set(alert_query.Get_alerted_sensor_ids()).intersection(all_sensor_ids)
+    
+    # 4) Recently elevated (all sensors elevated in past "alert_lag" minutes)
+    recent_elevated_sensors = set(sensors_df[sensors_df.last_elevated + dt.timedelta(minutes=alert_lag
+                                    ) < np.datetime64(runtime)
+                                ].sensor_id)
 
-    # 4) Flagged Sensors
-
-    flagged = sensor_id_dict['flagged']
+    # 5) Flagged Sensors
+    flagged = set(sensors_df[sensors_df.is_flagged == True].sensor_id.to_list())
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # The Final sets:
 
-    # A) new = set_1 - set_2
-    sensor_id_dict['new_spike'] = active_spikes - previous_active_spikes
+    # A) Ordinary set_1 - set_5
+    sensor_id_dict['ordinary'] = all_sensor_ids - flagged
 
-    # B) ongoing = set_1 AND set_2
-    sensor_id_dict['ongoing_spike'] = active_spikes.intersection(previous_active_spikes)
+    # B) new = set_2 - set_3
+    sensor_id_dict['new_spike'] = spiked_sensors - alerted_sensors
 
-    # C) not spiked = (set_2 - set_1) OR set_4
-    sensor_id_dict['not_spike'] = (not_previous_elevated - active_spikes).union(flagged)
+    # C) ongoing = set_3 AND (set_2 OR set_4)
+    sensor_id_dict['ongoing_spike'] = alerted_sensors.intersection(spiked_sensors.union(recent_elevated_sensors))
     
-    # D) Ended alerted sensors = set_2 AND set_C
-    sensor_id_dict['ended_spike'] = previous_active_spikes.intersection(sensor_id_dict['not_spike'])
+    # D) Ended = set_3 - set_C
+    sensor_id_dict['ended_spike'] = alerted_sensors - sensor_id_dict['ongoing_spike']
+    
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
     # Map the categories to dataframe
-
-    status_write_order = ['not_spike', 'new_spike', 'ongoing_spike', 'flagged', 'ended_spike']
     
-    for status in status_write_order:
+    status_order = ['ordinary', 'new_spike', 'ongoing_spike', 'ended_spike']
+    
+    for status in status_order:
         sensor_ids_w_status = sensor_id_dict[status] # Get sensor_ids 
         if len(sensor_ids_w_status)>0:
-            is_status = sensors_df.sensor_id.isin(sensor_ids_w_status) # Boolean series
-            sensors_df.loc[is_status, 'sensor_status'] = status # Overwrite
+            is_status = final_sensors_df.sensor_id.isin(sensor_ids_w_status) # Boolean series
+            final_sensors_df.loc[is_status, 'sensor_status'] = status # Overwrite
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
     # Drop last_elevated column
 
-    final_sensors_df = sensors_df.drop(columns = ['last_elevated']).copy()
+    final_sensors_df = final_sensors_df.drop(columns = ['last_elevated']).copy()
     
     return final_sensors_df

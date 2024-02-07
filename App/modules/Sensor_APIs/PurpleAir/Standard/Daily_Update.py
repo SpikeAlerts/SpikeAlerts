@@ -58,16 +58,15 @@ def Workflow(monitor_dict, timezone):
     
     # Iterate through sensors on the monitor
     
-    for sensor_type in monitor_dict:
-        
+    for sensor_type in monitor_dict:        
         
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Load information from our database to compare to API
         
-        sensors_df = sensor_queries.Get_Sensor_Info(['sensor_id', 'api_id', 'name',
+        sensors_df = sensor_queries.Get_Sensor_Info(fields = ['sensor_id', 'api_id', 'name',
                                                            'last_seen', 'channel_flags',
                                                             'channel_state'], 
-                                                           sensor_type)
+                                                           sensor_types = [sensor_type])
         sensors_df['api_id'] = sensors_df.api_id.astype(int) # Format api_id as integer for merging
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

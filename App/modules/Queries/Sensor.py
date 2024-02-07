@@ -62,10 +62,40 @@ def Get_Sensor_APIs_Information():
     sensor_api_dict = dict(response)
     
     return sensor_api_dict   
+    
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Get_Sensor_Types_Ready_to_Update(runtime):
+    '''
+    Gets the sensor types from "Sensor Type Information" that are ready for a regular update
+    needs runtime (datetime object)
+    
+    returns a list of sensor_types
+    '''
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    
+    update_time = runtime.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Make command
+    
+    cmd = sql.SQL('''
+    SELECT sensor_type 
+    FROM base."Sensor Type Information"
+    WHERE last_update + INTERVAL '1 Minutes' * update_frequency < {};''').format(sql.Literal(update_time))
+
+    response = psql.get_response(cmd)
+
+    # Unpack response into list
+
+    sensor_types = [i[0] for i in response] # Unpack results into list
+    
+    return sensor_types
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,2,3,4], channel_states = [0,1,3]):
+def Get_Sensor_Info(fields=['sensor_id'], sensor_types='All', channel_flags=[0,1,2,3,4], channel_states = [0,1,3]):
     '''
     Gets data from sensors in our database (except geometry)
 
@@ -85,7 +115,7 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,
 	altitude int,
 	"last_value" float -- The last value of the sensor
 	
-    sensor_type - string - corresponds to sensor_type in database
+    sensor_type - list of strings - corresponds to sensor_type in database, default is all
     
     channel_flags/state - list of integers - used to limit queries to 
     
@@ -124,14 +154,14 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,
             
         
 
-        if sensor_type == 'All':
+        if sensor_types == 'All':
             cmd += sql.SQL('''FROM "Sensors"
                               WHERE channel_state = ANY ( {} ) AND channel_flags = ANY ( {} );''').format(sql.Literal(channel_states),
                         sql.Literal(channel_flags))
         else:
-            cmd += sql.SQL('''FROM "Sensors" WHERE sensor_type = {}
+            cmd += sql.SQL('''FROM "Sensors" WHERE sensor_type = ANY ( {} )
             AND channel_state = ANY ( {} ) AND channel_flags = ANY ( {} ); 
-            ''').format(sql.Literal(sensor_type),
+            ''').format(sql.Literal(sensor_types),
                         sql.Literal(channel_states),
                         sql.Literal(channel_flags))
 
@@ -181,51 +211,27 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_type='All', channel_flags=[0,1,
     
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_Sensor_Types_Ready_to_Update(timezone = 'America/Chicago'):
+def Get_not_elevated_sensors(runtime, alert_lag = 0):
     '''
     Gets the sensor types from "Sensor Type Information" that are ready for a regular update
+     
+    runtime is a datetime object
+    alert_lag is the number of minutes to wait until ending an alert
     
-    returns a list of sensor_types
+    returns a list of sensor_ids
     '''
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
     
-    # Make command
-    
-    cmd = sql.SQL('''
-    SELECT sensor_type 
-    FROM base."Sensor Type Information"
-    WHERE last_update + INTERVAL '1 Minutes' * update_frequency < 
-            CURRENT_TIMESTAMP AT TIME ZONE {};''').format(sql.Literal(timezone))
-
-    response = psql.get_response(cmd)
-
-    # Unpack response into list
-
-    sensor_types = [i[0] for i in response] # Unpack results into list
-    
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    return sensor_types
-    
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-def Get_not_elevated_sensors(alert_lag, timezone = 'America/Chicago'):
-    '''
-    Gets the sensor types from "Sensor Type Information" that are ready for a regular update
-    
-    returns a list of sensor_types
-    '''
-    
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    update_time = runtime.strftime('%Y-%m-%d %H:%M:%S')
     
     # Make command
     
     cmd = sql.SQL('''
     SELECT sensor_id 
     FROM "Sensors"
-    WHERE last_elevated + INTERVAL '1 Minutes' * {} < 
-            CURRENT_TIMESTAMP AT TIME ZONE {};''').format(sql.Literal(alert_lag),
-                                                          sql.Literal(timezone))
+    WHERE last_elevated + INTERVAL '1 Minutes' * {} < {};''').format(sql.Literal(alert_lag),
+                                                          sql.Literal(update_time))
 
     response = psql.get_response(cmd)
 
