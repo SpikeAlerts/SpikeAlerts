@@ -11,7 +11,8 @@ import pytz # Timezones
 from modules import Sensor_Functions as sensors
 from modules.Queries import Sensor as sensor_queries
 from modules.Queries import General as query
-# from psycopg2 import sql
+from modules import Basic_PSQL as psql
+from psycopg2 import sql
 # import psycopg2
 
 # Importing Libraries
@@ -76,9 +77,9 @@ def workflow(base_config, next_update_time):
 #         REDCap_df = redcap.Get_new_users(max_record_id, redCap_token_signUp)
 #         Add_new_users(REDCap_df, pg_connection_dict)
         
-#         # Initialize Daily Log
-        
-#         initialize_daily_log(len(REDCap_df), pg_connection_dict)
+        # Initialize Daily Log
+
+        initialize_daily_log(0)
         
 #         # Send reports stored from yesterday
         
@@ -107,10 +108,40 @@ def workflow(base_config, next_update_time):
     next_update_time += dt.timedelta(days=1)
     
     return next_update_time
-
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
+# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+def initialize_daily_log(len_new_users):
+    '''
+    This function initializes a new daily log - IT IS NOT DONE
+    
+    Fields
+     ("date" date DEFAULT CURRENT_DATE,
+     new_POIs int DEFAULT 0,
+     new_sensors int DEFAULT 0,
+     retired_sensors int DEFAULT 0,
+	 alerts_sent int DEFAULT 0
+    '''
+
+    cmd = sql.SQL('''INSERT INTO "Daily Log"
+    (new_POIs, new_sensors) 
+    VALUES ({}, {});
+    ''').format(sql.Literal(len_new_users),
+                sql.Literal(len_new_users))
+
+    psql.send_update(cmd)
+   
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# def Clear_afterhour_reports(pg_connection_dict):
+#     '''
+#     This function clears the "Afterhour Reports" table
+#     '''
+    
+#     cmd = sql.SQL('''TRUNCATE TABLE "Afterhour Reports";''')
+    
+#     psql.send_update(cmd, pg_connection_dict)
 
 # # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -169,31 +200,6 @@ def workflow(base_config, next_update_time):
             
 # #             our_twilio.send_texts(numbers, messages)
     
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-# def initialize_daily_log(len_new_users, pg_connection_dict):
-#     '''
-#     This function initializes a new daily log
-#     '''
-    
-#     cmd = sql.SQL('''INSERT INTO "Daily Log"
-# 	(new_users, messages_sent, segments_sent) 
-# VALUES ({}, {}, {});
-#     ''').format(sql.Literal(len_new_users), sql.Literal(len_new_users), sql.Literal(len_new_users * 2))
-    
-#     psql.send_update(cmd, pg_connection_dict)
-    
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# def Clear_afterhour_reports(pg_connection_dict):
-#     '''
-#     This function clears the "Afterhour Reports" table
-#     '''
-    
-#     cmd = sql.SQL('''TRUNCATE TABLE "Afterhour Reports";''')
-    
-#     psql.send_update(cmd, pg_connection_dict)
 
 # # Subscriptions
 
