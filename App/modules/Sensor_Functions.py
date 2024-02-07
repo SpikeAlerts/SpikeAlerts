@@ -19,22 +19,22 @@ def Map_to_Health_Descriptors(values, thresholds):
     parameters
     
     values - pandas series of floats - raw sensor value with same health benchmarks
-    thresholds - list - list of values dividing the following health descriptors (left inclusive)
+    thresholds - list - list of 7 values dividing the following health descriptors (left inclusive)
     
-    moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous
+    ERROR (too low), good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous, ERROR (too high)
     
     returns a pandas series with above descriptors
     '''      
     
-    health_descriptors = ['ERROR', 'good', 'moderate', 'unhealthy for sensitive groups',
-                    'unhealthy', 'very unhealthy', 'hazardous']
+    health_descriptors = ['ERROR (too low)', 'good', 'moderate', 'unhealthy for sensitive groups',
+                    'unhealthy', 'very unhealthy', 'hazardous', 'ERROR (too high)']
                     
-    bins = [-float('inf'), 0] + thresholds + [float('inf')]
+    bins = [-float('inf')] + thresholds + [float('inf')]
     
     descriptor_series = pd.cut(values, bins,
                  right = False, include_lowest = True,
                  labels = health_descriptors)
-        
+
     return descriptor_series
         
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

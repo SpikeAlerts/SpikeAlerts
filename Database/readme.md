@@ -12,7 +12,7 @@ INSERT INTO base."Sensor Type Information" ( \
     pollutant, -- text, -- A name of the pollutant measured \
     metric, -- text, -- A unit to append to readings of this sensor for context \
     thresholds, -- float [],  -- The left inclusive health thresholds for this sensor (in the above metric) \
-    -- ^ In this order (moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous) \
+    -- ^ In this order (lowest possible, moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous, highest possible) \
     radius_meters, -- float, -- The distance this sensor is relevant to (for POIs) \
     update_frequency -- int, -- The frequency for regular updates in minutes \
     ) \
@@ -23,7 +23,7 @@ VALUES ( \
     'pm2.5_10minute', \
     'PM2.5', \
     'ug/m^3', \
-    ARRAY[12.1, 35.5, 55.5, 150.5, 250.5], \
+    ARRAY[0, 12.1, 35.5, 55.5, 150.5, 250.5, 1000], \
     1000, \
     10 \
 ); \
