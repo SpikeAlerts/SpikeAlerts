@@ -106,11 +106,11 @@ def workflow(base_config):
                 sensors_df = pd.concat([sensors_df, temp_sensors_df],  ignore_index = True)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # 3 - Sort out the sensors_df column 'sensor_status' - IMPROVE: 30 is a hardcoded alert_lag time
+    # 3 - Sort out the sensors_df column 'sensor_status'
     
     if len(sensors_df) > 0:
     
-        sensors_df = Sort_sensors_df(sensors_df, 30, runtime)
+        sensors_df = Sort_sensors_df(sensors_df, runtime)
     
     else:
         print('\n~~~\nWarning: No sensors in database to update. \n\nPlease wait a little longer for a regular update\nor conduct a daily update to pull new sensors from APIs\n~~~\n')
@@ -120,11 +120,11 @@ def workflow(base_config):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 ### Function to sort the sensor indices
     
-def Sort_sensors_df(sensors_df, alert_lag, runtime):
+def Sort_sensors_df(sensors_df, runtime):
     '''
     This sorts the sensor indices into sets based on if they are ordinary, new_spike, ongoing_spike, ended_spike
     
-    Inputs: sensors_df from above, alert_lag (int in minutes to delay ending an alert), pytz timezone
+    Inputs: sensors_df from above, runtime (datetime
             
     returns final_sensors_df with its column 'sensor_status' properly sorted and 'last_elevated' column removed
     '''
@@ -164,9 +164,9 @@ def Sort_sensors_df(sensors_df, alert_lag, runtime):
     alerted_sensors = set(alert_query.Get_alerted_sensor_ids()).intersection(all_sensor_ids)
     
     # 4) Recently elevated (all sensors elevated in past "alert_lag" minutes)
-    recent_elevated_sensors = set(sensors_df[sensors_df.last_elevated + dt.timedelta(minutes=alert_lag
-                                    ) < np.datetime64(runtime)
-                                ].sensor_id)
+#    recent_elevated_sensors = set(sensors_df[sensors_df.last_elevated + dt.timedelta(minutes=alert_lag
+#                                    ) < np.datetime64(runtime)
+#                                ].sensor_id)
 
     # 5) Flagged Sensors
     flagged = set(sensors_df[sensors_df.is_flagged == True].sensor_id.to_list())
@@ -181,8 +181,8 @@ def Sort_sensors_df(sensors_df, alert_lag, runtime):
     # B) new = set_2 - set_3
     sensor_id_dict['new_spike'] = spiked_sensors - alerted_sensors
 
-    # C) ongoing = set_3 AND (set_2 OR set_4)
-    sensor_id_dict['ongoing_spike'] = alerted_sensors.intersection(spiked_sensors.union(recent_elevated_sensors))
+    # C) ongoing = set_2 AND set_3
+    sensor_id_dict['ongoing_spike'] = alerted_sensors.intersection(spiked_sensors)
     
     # D) Ended = set_3 - set_C
     sensor_id_dict['ended_spike'] = alerted_sensors - sensor_id_dict['ongoing_spike']
