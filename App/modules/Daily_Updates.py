@@ -51,6 +51,8 @@ def workflow(base_config, next_update_time):
     last_update_date = query.Get_last_Daily_Log()
       
     if last_update_date < next_update_time.date(): # If haven't updated full system today
+    
+        print('Running Daily Update')
 
         # Update Sensors from their respective APIs
 
@@ -104,6 +106,8 @@ def workflow(base_config, next_update_time):
 #             Send_Alerts.send_all_messages(ongoing_record_ids, messages,
 #                                           redCap_token_signUp, pg_connection_dict)
     
+        print('Completed Daily Update')
+        
     # Get next update time (in 1 day)
     next_update_time += dt.timedelta(days=1)
     

@@ -22,7 +22,7 @@ import modules.Sensor_Functions as sensors
 
 ## Workflow
 
-def workflow(sensors_df, sensor_types_updated, runtime):
+def workflow(base_config, sensors_df, sensor_types_updated, runtime):
     '''
     Runs the full workflow to update our database table "Sensors" with the following:
 
@@ -79,9 +79,9 @@ def workflow(sensors_df, sensor_types_updated, runtime):
     sensors.Update_Sensors(current_reading_update_df)
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # last_updated ("Sensor Type Information")
+    # last_updated ("Sensor Type Information") with the current time
     
-    Update_last_update(sensor_types_updated, runtime)
+    Update_last_update(sensor_types_updated, dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 

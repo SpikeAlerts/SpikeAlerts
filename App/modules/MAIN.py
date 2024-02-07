@@ -40,9 +40,7 @@ def main(base_config, now, next_system_update):
     
     if now > next_system_update:
         #pass
-        print('Running Daily Update')
         next_system_update = Daily_Updates.workflow(base_config, next_system_update)
-        print('Completed Daily Update')
 
     # ~~~~~~~~~~~~~~~~~~~~~
     
@@ -50,15 +48,16 @@ def main(base_config, now, next_system_update):
 
     sensors_df, sensor_types_updated, runtime = GetSort_Spikes.workflow(base_config)
 
-    # 1b) Update our database tables "Sensors" and "Sensor Type Information"
+    if len(sensors_df) > 0:
+        # 1b) Update our database tables "Sensors" and "Sensor Type Information"
 
-    Update_Sensor_Tables.workflow(sensors_df, sensor_types_updated, runtime)
+        Update_Sensor_Tables.workflow(base_config, sensors_df, sensor_types_updated, runtime)
 
-    # ~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~~~~
 
-    # 2) Workflow for updating our database tables "Active Alerts" and "Archived Alerts"
+        # 2) Workflow for updating our database tables "Active Alerts" and "Archived Alerts"
 
-    Update_Alert_Tables.workflow(sensors_df, runtime)
+        Update_Alert_Tables.workflow(sensors_df, runtime)
 
     
     
