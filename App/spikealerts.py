@@ -82,7 +82,6 @@ print(f'''Beginning program
 
 Running until {stoptime}
 Updating every {timestep} minutes
-Next system update:{next_system_update}
 ''')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
