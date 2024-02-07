@@ -129,8 +129,7 @@ else:
             # usually close to timestep, but main can take seconds to run 
             now = dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])) # Now
             sleep_seconds = (next_regular_update - now).total_seconds() # Time until next regular update
-            print('One iteration Done')
-            print('Sleeping for', sleep_seconds, ' seconds')
+            print('Sleeping for', sleep_seconds, 'seconds\n~~~~~~~~~~~\n')
             
             # Sleep
             time.sleep(sleep_seconds) # Sleep
