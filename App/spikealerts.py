@@ -109,6 +109,7 @@ else:
         
         try:
             print('calling main')
+            print('Runtime: ', now)
             next_system_update = main(base_config, now, next_system_update)
             print('made it through main')
             

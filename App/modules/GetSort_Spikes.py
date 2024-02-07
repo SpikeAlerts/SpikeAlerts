@@ -21,11 +21,11 @@ from importlib import import_module
 
 ## Workflow
 
-def workflow(base_config):
+def workflow(base_config, runtime):
     '''
     Runs the full workflow to get data from the apis and begins interpretation of the information.  
     
-    returns sensors_df (pd.DataFrame), sensor_types_to_update (set of strings), and  runtime (datetime timestamp)
+    returns sensors_df (pd.DataFrame), sensor_types_to_update (set of strings)
 
     sensors_df fields are:
 
@@ -41,8 +41,6 @@ def workflow(base_config):
     '''
     
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    
-    runtime = dt.datetime.now(pytz.timezone(base_config['TIMEZONE']))
     
     # 0 - Initialize storage of above w/out sensor_status and one extra column 'last_elevated' used to determine sensor_status later
 
@@ -115,7 +113,7 @@ def workflow(base_config):
     else:
         print('\n~~~\nWarning: No sensors in database to update. \n\nPlease wait a little longer for a regular update\nor conduct a daily update to pull new sensors from APIs\n~~~\n')
 
-    return sensors_df, sensor_types_to_update, runtime
+    return sensors_df, sensor_types_to_update
   
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 ### Function to sort the sensor indices

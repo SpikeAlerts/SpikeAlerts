@@ -27,7 +27,7 @@ from modules import Update_Alert_Tables # 2
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### The Workflow
-def main(base_config, now, next_system_update):
+def main(base_config, runtime, next_system_update):
     '''
     This is the main workflow of one iteration of the SpikeAlerts App
     
@@ -38,7 +38,7 @@ def main(base_config, now, next_system_update):
     
     # 0) System Update? - Only sensors for now
     
-    if now > next_system_update:
+    if runtime > next_system_update:
         #pass
         next_system_update = Daily_Updates.workflow(base_config, next_system_update)
 
@@ -46,7 +46,7 @@ def main(base_config, now, next_system_update):
     
     # 1a) Query APIs for current data & Sort Sensors into categories
 
-    sensors_df, sensor_types_updated, runtime = GetSort_Spikes.workflow(base_config)
+    sensors_df, sensor_types_updated = GetSort_Spikes.workflow(base_config, runtime)
 
     if len(sensors_df) > 0:
         # 1b) Update our database tables "Sensors" and "Sensor Type Information"
