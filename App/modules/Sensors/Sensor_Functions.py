@@ -7,7 +7,7 @@ import pandas as pd
 # Database
 
 from psycopg2 import sql
-import modules.Basic_PSQL as psql
+import modules.Database.Basic_PSQL as psql
     
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
 def Map_to_Health_Descriptors(values, thresholds):

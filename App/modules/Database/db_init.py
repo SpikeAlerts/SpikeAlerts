@@ -3,7 +3,7 @@
 # Database 
 
 import psycopg2 # For working with postgresql database
-from modules.db_conn import pg_connection_dict # Getting the connection dictionary
+from modules.Database.db_conn import pg_connection_dict # Getting the connection dictionary
 
 
 def db_need_init():

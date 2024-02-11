@@ -41,7 +41,7 @@ import time # For Sleeping
 
 # Our modules
 
-from modules.db_init import db_need_init # Has the database been initialized?
+from modules.Database.db_init import db_need_init # Has the database been initialized?
 from modules.MAIN import main # The Main Loop
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

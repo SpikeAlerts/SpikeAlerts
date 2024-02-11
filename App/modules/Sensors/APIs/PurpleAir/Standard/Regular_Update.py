@@ -15,13 +15,13 @@ import geopandas as gpd
 
 # Database
 
-import modules.Basic_PSQL as psql
-from modules.Queries import General as query
-from modules.Queries import Sensor as sensor_queries
+import modules.Database.Basic_PSQL as psql
+from modules.Database.Queries import General as query
+from modules.Database.Queries import Sensor as sensor_queries
 
 # Sensors
-import modules.Sensor_Functions as sensors
-import modules.Sensor_APIs.PurpleAir.API_functions as purp
+import modules.Sensors.Sensor_Functions as sensors
+import modules.Sensors.APIs.PurpleAir.API_functions as purp
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

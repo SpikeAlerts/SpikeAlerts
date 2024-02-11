@@ -9,7 +9,7 @@ import pytz # Timezones
 
 # Database 
 
-from modules import Basic_PSQL as psql
+from modules.Database import Basic_PSQL as psql
 from psycopg2 import sql
 
 # Data Manipulation
@@ -18,7 +18,7 @@ import pandas as pd
 
 # Sensor Functions
 
-import modules.Sensor_Functions as sensors
+import modules.Sensors.Sensor_Functions as sensors
 
 ## Workflow
 

@@ -8,8 +8,8 @@ import pytz # Timezones
 # Database 
 
 
-from modules.Queries import Sensor as sensor_query
-from modules.Queries import Alert as alert_query
+from modules.Database.Queries import Sensor as sensor_query
+from modules.Database.Queries import Alert as alert_query
 
 # Data Manipulation
 
@@ -94,7 +94,7 @@ def workflow(runtime, timezone):
                 monitor_api_df = api_df[api_df.sensor_type.isin(monitor_sensor_types_to_update)] # Select from greater api df
             
                 # Get the module name
-                module = f'modules.Sensor_APIs.{api_name}.{monitor_name}.Regular_Update'
+                module = f'modules.Sensors.APIs.{api_name}.{monitor_name}.Regular_Update'
     
                 # 2.b Call APIs for a regular update
                 temp_sensors_df = import_module(module).Workflow(monitor_dict, monitor_api_df,

@@ -3,7 +3,7 @@
 ## Load modules
 
 from psycopg2 import sql
-from modules import Basic_PSQL as psql
+from modules.Database import Basic_PSQL as psql
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -6,7 +6,7 @@ import datetime as dt # Working with dates/times
 
 # Database 
 
-from modules import Basic_PSQL as psql
+from modules.Database import Basic_PSQL as psql
 from psycopg2 import sql
 
 ## Workflow

@@ -111,8 +111,8 @@ VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
 ```
 INSERT INTO base."Sensor Type Information" ( 
     sensor_type, -- text, -- Sensor Type Identifier 
-    api_name, -- text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensor_APIs 
-    monitor_name, -- text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensor_APIs/api_name 
+    api_name, -- text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensors/APIs 
+    monitor_name, -- text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensors/APIs/api_name 
     api_fieldname, -- text, -- the fieldname to get regular readings from the api 
     pollutant, -- text, -- A name of the pollutant measured 
     metric, -- text, -- A unit to append to readings of this sensor for context 

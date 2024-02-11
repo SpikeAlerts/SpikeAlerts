@@ -8,10 +8,10 @@ import pytz # Timezones
 # Database 
 
 # from modules import Basic_PSQL as psql
-from modules import Sensor_Functions as sensors
-from modules.Queries import Sensor as sensor_queries
-from modules.Queries import General as query
-from modules import Basic_PSQL as psql
+from modules.Sensors import Sensor_Functions as sensors
+from modules.Database.Queries import Sensor as sensor_queries
+from modules.Database.Queries import General as query
+from modules.Database import Basic_PSQL as psql
 from psycopg2 import sql
 # import psycopg2
 
@@ -66,7 +66,7 @@ def workflow(base_config, next_update_time):
                 monitor_dict = sensor_api_dict[api_name][monitor_name]
                 
                 # Get the module name
-                module = f'modules.Sensor_APIs.{api_name}.{monitor_name}.Daily_Update'
+                module = f'modules.Sensors.APIs.{api_name}.{monitor_name}.Daily_Update'
 
                 # Call for a daily update
                 import_module(module).Workflow(monitor_dict,

@@ -47,8 +47,8 @@ CREATE TABLE "extent" -- This is to define the bounding box of the project
 
 CREATE TABLE "Sensor Type Information" -- This is to keep track of the different sensors in the project
     (sensor_type text PRIMARY KEY, -- Sensor Type Identifier
-    api_name text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensor_APIs
-    monitor_name text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensor_APIs/api_name
+    api_name text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensors/APIs
+    monitor_name text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensors/APIs/api_name
     api_fieldname text, -- the fieldname to get regular readings from the api
     pollutant text, -- An abbreviated name of the pollutant measured
     metric text, -- A unit to append to readings of this sensor for context

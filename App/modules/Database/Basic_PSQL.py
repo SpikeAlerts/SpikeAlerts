@@ -4,7 +4,7 @@
 
 import psycopg2
 from psycopg2 import sql
-from modules.db_conn import pg_connection_dict # Our database connection dictionary for psycopg2
+from modules.Database.db_conn import pg_connection_dict # Our database connection dictionary for psycopg2
 
 # ~~~~~~~~~~~~~~
 
