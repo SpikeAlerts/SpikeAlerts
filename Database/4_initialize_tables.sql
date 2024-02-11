@@ -29,7 +29,7 @@ SET SEARCH_PATH = 'base';
 -- General 
 
 CREATE TABLE "Daily Log" -- This is to store important daily metrics
-    ("date" date DEFAULT CURRENT_DATE,
+    ("date" date PRIMARY KEY DEFAULT CURRENT_DATE,
      new_POIs int DEFAULT 0,
      new_sensors int DEFAULT 0,
      retired_sensors int DEFAULT 0,
@@ -46,7 +46,7 @@ CREATE TABLE "extent" -- This is to define the bounding box of the project
 -- Sensors
 
 CREATE TABLE "Sensor Type Information" -- This is to keep track of the different sensors in the project
-    (sensor_type text, -- Sensor Type Identifier
+    (sensor_type text PRIMARY KEY, -- Sensor Type Identifier
     api_name text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensor_APIs
     monitor_name text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensor_APIs/api_name
     api_fieldname text, -- the fieldname to get regular readings from the api
@@ -96,7 +96,7 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 -- POIs
 
 CREATE TABLE "Points of Interest"-- This is our internal record keeping for POIs (AKA users)
-	(poi_id bigserial, -- Unique Identifier
+	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
 	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
 	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids not yet notified about
@@ -107,7 +107,7 @@ CREATE TABLE "Points of Interest"-- This is our internal record keeping for POIs
 -- Reports
 
 CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each POI
-	(report_id varchar(12), -- Unique Identifier with format #####-MMDDYY
+	(report_id varchar(12) PRIMARY KEY, -- Unique Identifier with format #####-MMDDYY
 	start_time timestamp,
 	duration_minutes integer,
 	severity text, -- One of these categories: Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous
