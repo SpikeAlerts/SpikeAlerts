@@ -6,11 +6,9 @@
 
 ## PSQL:
 ```
-{
 CREATE ROLE mgmt with LOGIN CREATEDB CREATEROLE SUPERUSER;
 
 ALTER ROLE mgmt WITH PASSWORD 'postgres'; -- Change this!
-}
 ```
 
 ---
@@ -39,7 +37,6 @@ Careful with this codeblock. It cascade deletes POSTGIS which will remove geomet
 
 ## SQL
 ```
-{
 -- Drop/create schema and extensions
 DO $$
 DECLARE schemaname text; -- Initialize variable for the schema name
@@ -63,7 +60,6 @@ BEGIN
     ', schemaname
     );
 END$$;
-}
 ```
 
 ---
@@ -76,7 +72,6 @@ END$$;
 
 ## PSQL:
 ```
-{
 CREATE ROLE app with LOGIN;
 
 ALTER ROLE app WITH PASSWORD 'postgres'; -- Change this!
@@ -86,7 +81,6 @@ GRANT USAGE ON SCHEMA base TO app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA base TO app;
 
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA base TO app;
-}
 ```
 
 ---
@@ -102,13 +96,11 @@ Or use the following SQL (after changing the lat/lons)
 
 ## SQL:
 ```
-{
 -- Extent of the project (in latitude/longitude)
 
 INSERT INTO base."extent" (minlng, maxlng, minlat, maxlat)
 VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
 );
-}
 ```
 ---
 ---
@@ -116,7 +108,7 @@ VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
 
 ## An Example of SQL to do this for PurpleAir is:
 
-```{
+```
 INSERT INTO base."Sensor Type Information" ( 
     sensor_type, -- text, -- Sensor Type Identifier 
     api_name, -- text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensor_APIs 
@@ -140,5 +132,4 @@ VALUES (
     1000, 
     10 
 ); 
-}
 ```
