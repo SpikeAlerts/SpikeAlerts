@@ -40,7 +40,7 @@ def Get_last_Daily_Log():
 
 def Get_extent(): 
     '''
-    Gets the bounding box of our project's extent + 100 meters ("Minneapolis Boundary")
+    Gets the bounding box of our project's extent + 100 meters
     
     Specifically for PurpleAir api
     
@@ -49,7 +49,7 @@ def Get_extent():
     
     # Query for bounding box of boundary buffered 100 meters
 
-    cmd = sql.SQL('''SELECT minlng, minlat, maxlng, maxlat from "Extent"
+    cmd = sql.SQL('''SELECT minlng, minlat, maxlng, maxlat from "extent"
     ''')
 
     response = psql.get_response(cmd)

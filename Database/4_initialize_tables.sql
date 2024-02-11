@@ -4,45 +4,20 @@
 
 --CREATE DATABASE "SpikeAlerts"; -- Create the database
 
--- CHANGE 'base' to your desired schema name 3 times in this script!!!
--- They occur in lines 22, 45, 120-156, and 168
-
--- Then you're good to run this script to initialize the database
+-- Then you're good to run this script to initialize the tables
 -- You can run this by using a psql command like:
 -- psql "host=postgres.cla.umn.edu user=<your_username> password=<your_password> " -f 1_initializedb_base.sql
 
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- Prep
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
--- Drop/create schema and extensions
-DO $$
-DECLARE schemaname text; -- Initialize variable for the schema name
-BEGIN
-	schemaname := 'base'; -- Set the Schema Name you wish to use - CHANGE THIS!!! 
-	
-	-- Drop schema and extensions if they exist
-	execute format(
-	'
-	DROP SCHEMA IF EXISTS %I CASCADE;
-	DROP EXTENSION IF EXISTS postgis CASCADE;
-	', schemaname
-	);	
-	
-	-- Create schema and extensions
-	execute format(
-	'
-	CREATE SCHEMA %I;
-	CREATE EXTENSION postgis; -- Add spatial extensions
-	CREATE EXTENSION postgis_topology;
-    ', schemaname
-	);
+-- Create Public Tables & Views
 
-END$$;
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
--- Set the search path to desired schema
+-- Set 'base' schema to search path
 
-SET SEARCH_PATH = 'base'; -- CHANGE THIS!!!!
+SET SEARCH_PATH = 'base';
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -61,7 +36,7 @@ CREATE TABLE "Daily Log" -- This is to store important daily metrics
 	 alerts_sent int DEFAULT 0
     );
     
-CREATE TABLE "Extent" -- This is to define the bounding box of the project
+CREATE TABLE "extent" -- This is to define the bounding box of the project
     (minlng Double Precision,
     maxlng Double Precision,
     minlat Double Precision,
@@ -86,8 +61,8 @@ CREATE TABLE "Sensor Type Information" -- This is to keep track of the different
 
 CREATE TABLE "Sensors" -- Storage for all sensors
 (
-	sensor_id serial, -- Our Unique Identifier
-	sensor_type text, -- Relates to above table
+	sensor_id serial PRIMARY KEY, -- Our Unique Identifier
+	sensor_type text REFERENCES "Sensor Type Information" (sensor_type), -- Relates to above table
 	api_id text, -- The unique identifier for the api
 	name varchar(100), -- A name for the sensor (for humans)
 	date_created timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -103,59 +78,42 @@ CREATE TABLE "Sensors" -- Storage for all sensors
 -- Alerts
 
 CREATE TABLE "Active Alerts" -- These are the SpikeAlerts that are currently out
-	(alert_id bigserial, -- Unique identifier for a spike alert
-	 sensor_id int, -- Sensor Unique Identifiers
+	(alert_id bigserial PRIMARY KEY, -- Unique identifier for a spike alert
+	 sensor_id int REFERENCES "Sensors" (sensor_id), -- Sensor Unique Identifiers
 	  start_time timestamp, -- The time when sensor values started reporting high (slightly before alert begins)
 	  last_update timestamp, -- last time the alert was updated
 	  avg_reading float, -- Average value registered
 	   max_reading float); -- Maximum value registered
 
 CREATE TABLE "Archived Alerts" -- Archive of the Above table
-	(alert_id bigint, -- Unique identifier for a spike alert
-	 sensor_id int, -- Sensor Unique Identifiers
+	(alert_id bigint PRIMARY KEY, -- Unique identifier for a spike alert
+	 sensor_id int REFERENCES "Sensors" (sensor_id), -- Sensor Unique Identifiers
 	  start_time timestamp,
 	  duration_minutes integer, -- How long it lasted in minutes
 	  avg_reading float, -- Average value registered
 	   max_reading float); -- Maximum value registered
-	    
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-
--- Fill in essential Tables - CHANGE THIS!
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	   
--- Extent of the project (in latitude/longitude)
-	   
-INSERT INTO base."Extent" (minlng, maxlng, minlat, maxlat)
-VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
-);
+-- POIs
 
--- The sensor type(s) information
+CREATE TABLE "Points of Interest"-- This is our internal record keeping for POIs (AKA users)
+	(poi_id bigserial, -- Unique Identifier
+	alerts_sent int DEFAULT 0, -- Number of alerts sent
+	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
+	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids not yet notified about
+	sensitive boolean DEFAULT FALSE, -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
+	active boolean DEFAULT TRUE -- Are we monitoring this point?
+	);
 
-INSERT INTO base."Sensor Type Information" (
-    sensor_type, -- text, -- Sensor Type Identifier
-    api_name, -- text, -- the keeper of the api for this sensor, eg. PurpleAir - These should be in App/modules/Sensor_APIs
-    monitor_name, -- text, -- A name for the monitor that holds this sensor, - These should be in App/modules/Sensor_APIs/api_name
-    api_fieldname, -- text, -- the fieldname to get regular readings from the api
-    pollutant, -- text, -- A name of the pollutant measured
-    metric, -- text, -- A unit to append to readings of this sensor for context
-    thresholds, -- float [],  -- The health thresholds for this sensor (in the above metric)
-    -- ^ In this order (lowest possible, moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous, highest possible)
-    radius_meters, -- float, -- The distance this sensor is relevant to (for POIs)
-    update_frequency -- int, -- The frequency for regular updates in minutes
-    )
-VALUES (
-    'papm25',
-    'PurpleAir',
-    'Standard',
-    'pm2.5_10minute',
-    'PM2.5',
-    'ug/m^3',
-    ARRAY[0, 12.1, 35.5, 55.5, 150.5, 250.5, 1000],
-    1000,
-    10
-);
-	   
+-- Reports
+
+CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each POI
+	(report_id varchar(12), -- Unique Identifier with format #####-MMDDYY
+	start_time timestamp,
+	duration_minutes integer,
+	severity text, -- One of these categories: Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous
+	alert_ids bigint [] -- List of alert_ids
+    );
+    
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- Spatial Stuff
@@ -171,7 +129,11 @@ execute format('SET SEARCH_PATH = "$user", public, topology;
 			   
 			   ALTER TABLE %I."Sensors"
 			   ADD geometry geometry; -- A Point
-			   CREATE INDEX sensor_gid ON %I."Sensors" USING GIST(geometry);  -- Create spatial index for stations
+			   CREATE INDEX sensor_gid ON %I."Sensors" USING GIST(geometry);  -- Create spatial index for sensors
+			   
+			   ALTER TABLE %I."Points of Interest"
+			   ADD geometry geometry; -- A Point
+			   CREATE INDEX poi_gid ON %I."Points of Interest" USING GIST(geometry);  -- Create spatial index for POIs
 			   '
-			   , schemaname, schemaname);
+			   , schemaname, schemaname, schemaname, schemaname);
 END$$;

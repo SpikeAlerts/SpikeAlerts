@@ -9,7 +9,7 @@ from modules.db_conn import pg_connection_dict # Getting the connection dictiona
 def db_need_init():
   conn = psycopg2.connect(**pg_connection_dict)
   cur = conn.cursor()
-  cur.execute('SELECT * FROM "Extent"')
+  cur.execute('SELECT * FROM "extent"')
   response = cur.fetchall()
   cur.close()
   conn.close()
