@@ -1,10 +1,12 @@
-# 1) Create a [Postgres](https://www.postgresql.org/) server and connect to it 
+# How to Initialize the Database
+
+## 1) Create a [Postgres](https://www.postgresql.org/) server and connect to it 
 
 ---
 ---
-# 2) Create the "Manager" user (mgmt)
+## 2) Create the "Manager" user (mgmt)
 
-## PSQL:
+### PSQL:
 ```
 CREATE ROLE mgmt with LOGIN CREATEDB CREATEROLE SUPERUSER;
 
@@ -13,14 +15,14 @@ ALTER ROLE mgmt WITH PASSWORD 'postgres'; -- Change this!
 
 ---
 ---
-# 3) Create the database for the App
+## 3) Create the database for the App
 
-## PSQL: 
+### PSQL: 
 `CREATE DATABASE "SpikeAlerts"`
 
 ---
 ---
-# 4) Connect to the "SpikeAlerts" database as mgmt
+## 4) Connect to the "SpikeAlerts" database as mgmt
 
 Command line: psql "host=IP_ADDRESS dbname='SpikeAlerts' user=mgmt password=<your_password>"
 
@@ -32,10 +34,10 @@ Or use pgAdmin or another database manager
 
 ---
 ---
-# 3) Initialize the base schema and postgis extensions
+## 3) Initialize the base schema and postgis extensions
 Careful with this codeblock. It cascade deletes POSTGIS which will remove geometry columns of all tables **within your entire database**... You may want to remove that line.
 
-## SQL
+### SQL
 ```
 -- Drop/create schema and extensions
 DO $$
@@ -64,11 +66,16 @@ END$$;
 
 ---
 ---
-# 4) Run the SQL in the file /4_initialize_tables.sql
+## 4) Run the SQL in the file /4_initialize_tables.sql
+
+Copy, paste, and execute the sql or use:
+
+### PSQL: 
+`-f 4_initialize_tables.sql`
 
 ---
 ---
-# 4) Create the "App" user
+## 5) Create the "App" user
 
 ## PSQL:
 ```
@@ -85,7 +92,7 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA base TO app;
 
 ---
 ---
-# 5) Insert Extent
+# 6) Insert Extent
 
 Fill in extent.csv with appropriate latitudes and longitudes and run this 
 
@@ -104,7 +111,7 @@ VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
 ```
 ---
 ---
-# 6) Add Sensor Types
+# 7) Add Sensor Types
 
 ## An Example of SQL to do this for PurpleAir is:
 
@@ -117,7 +124,7 @@ INSERT INTO base."Sensor Type Information" (
     pollutant, -- text, -- A name of the pollutant measured 
     metric, -- text, -- A unit to append to readings of this sensor for context 
     thresholds, -- float [],  -- The left inclusive health thresholds for this sensor (in the above metric) 
-    -- ^ In this order (lowest possible, moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous, highest possible) 
+    -- ^ In this order (lowest possible, moderate, unhealth for sensitive groups, unhealthy, very unhealthy, hazardous, highest possible) 
     radius_meters, -- float, -- The distance this sensor is relevant to (for POIs) 
     update_frequency -- int, -- The frequency for regular updates in minutes 
     ) 

@@ -6,12 +6,8 @@
 
 -- Then you're good to run this script to initialize the tables
 -- You can run this by using a psql command like:
--- psql "host=postgres.cla.umn.edu user=<your_username> password=<your_password> " -f 1_initializedb_base.sql
+-- psql "host=postgres.cla.umn.edu user=<your_username> password=<your_password> " -f 4_initialize_tables.sql
 
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-
--- Create Public Tables & Views
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -53,7 +49,7 @@ CREATE TABLE "Sensor Type Information" -- This is to keep track of the different
     pollutant text, -- An abbreviated name of the pollutant measured
     metric text, -- A unit to append to readings of this sensor for context
     thresholds float [],  -- The health thresholds for this sensor (in the above metric)
-    -- ^ In this order (lowest possible, moderate, Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous, highest possible)
+    -- ^ In this order (lowest possible, moderate, unhealth for sensitive groups, unhealthy, very unhealthy, hazardous, highest possible)
     radius_meters float, -- The max distance this sensor is relevant to (for POIs)
     last_update timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:00', -- Last regular update time
     update_frequency int -- The frequency for regular updates in minutes, should relate to api_fieldname's time interval
@@ -80,18 +76,22 @@ CREATE TABLE "Sensors" -- Storage for all sensors
 CREATE TABLE "Active Alerts" -- These are the SpikeAlerts that are currently out
 	(alert_id bigserial PRIMARY KEY, -- Unique identifier for a spike alert
 	 sensor_id int REFERENCES "Sensors" (sensor_id), -- Sensor Unique Identifiers
-	  start_time timestamp, -- The time when sensor values started reporting high (slightly before alert begins)
+	 sensitive boolean DEFAULT TRUE, -- Indicates whether this is an alert only for sensitive groups
+	  start_time timestamp, -- The time when sensor values started reporting high
 	  last_update timestamp, -- last time the alert was updated
 	  avg_reading float, -- Average value registered
-	   max_reading float); -- Maximum value registered
+	   max_reading float, -- Maximum value registered
+	   UNIQUE (sensor_id, sensitive)); -- Ensure that each alert has a unique sensor_id, sensitive combo
 
 CREATE TABLE "Archived Alerts" -- Archive of the Above table
 	(alert_id bigint PRIMARY KEY, -- Unique identifier for a spike alert
 	 sensor_id int REFERENCES "Sensors" (sensor_id), -- Sensor Unique Identifiers
+	 sensitive boolean DEFAULT TRUE, -- Indicates whether this is an alert only for sensitive groups
 	  start_time timestamp,
 	  duration_minutes integer, -- How long it lasted in minutes
 	  avg_reading float, -- Average value registered
-	   max_reading float); -- Maximum value registered
+	   max_reading float, -- Maximum value registered
+	   UNIQUE (sensor_id, sensitive)); -- Ensure that each alert has a unique sensor_id, sensitive combo
 	   
 -- POIs
 
@@ -110,7 +110,7 @@ CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each
 	(report_id varchar(12) PRIMARY KEY, -- Unique Identifier with format #####-MMDDYY
 	start_time timestamp,
 	duration_minutes integer,
-	severity text, -- One of these categories: Unhealth for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous
+	severity text, -- One of these categories: good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous
 	alert_ids bigint [] -- List of alert_ids
     );
     
@@ -137,3 +137,11 @@ execute format('SET SEARCH_PATH = "$user", public, topology;
 			   '
 			   , schemaname, schemaname, schemaname, schemaname);
 END$$;
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+-- Create Views
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
