@@ -6,6 +6,7 @@ import datetime as dt # Working with dates/times
 
 # Database 
 
+from modules.Database.Queries import Alert as alert_query
 from modules.Database import Basic_PSQL as psql
 from psycopg2 import sql
 
@@ -14,10 +15,14 @@ from psycopg2 import sql
 def workflow(sensors_df, runtime):
     '''
     Runs the full workflow to update our database tables "Active Alerts" and "Archived Alerts". 
+    It will return prev_max_alert_id (int) which will help indicate which alert_ids are new
     This involves the following:
 
     a) New Alerts - Add new_spike sensors to "Active Alerts"
-    b) Ongoing Alerts - Update ongoing_spike sensors' avg_reading and max_reading in "Active Alerts"
+    b) Ongoing Alerts - 
+        i) Update ongoing_spike sensors' avg_reading and max_reading in "Active Alerts"
+        ii) Have any reached the "unhealthy" for all threshold? - update alerts with sensitive = False
+        iii) NOT DONE... set sensitive = True if falls below the threshold (this will mess up stuff later in workflow. needs more thought) 
     c) Ended Alerts - Add ended_spike sensors to "Archived Alerts" and remove from "Active Alerts"
     
     Parameters:
@@ -29,12 +34,16 @@ def workflow(sensors_df, runtime):
     update_frequency - int - frequency this sensor is updated
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
-    health_descriptor - str - current_reading related to current health benchmarks
+    health_descriptor - str - current_reading related to current health benchmarks: good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous
     radius_meters - int - max distance sensor is relevant
     sensor_status - text - one of these categories: new_spike, ongoing_spike, ended_spike, unknown, or ordinary
     
     runtime - approximate time that the values for above dataframe were acquired
+    
+    returns prev_max_alert_id
     '''
+    
+    prev_max_alert_id = alert_query.Get_max_active_alert_id() # Returns the highest active alert_id or 0 (if no active alerts)
 
     # ~~~~~~~~~~~~~~~~
     # a) New Alerts
@@ -61,11 +70,29 @@ def workflow(sensors_df, runtime):
     if len(ongoing_spikes_df) > 0:
         
         print('updating ongoing alerts')
+         
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        # Update active alerts
+        # i) Update active alerts
 
         Update_active_alerts(ongoing_spikes_df, runtime)
-
+        
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        # ii) Update "sensitive" in the database
+        
+        # Select the more severe spikes observed from the API
+        
+        severities = ['unhealthy', 'very unhealthy', 'hazardous'] # The higher severities
+        
+        severe_ongoing_spikes_df = ongoing_spikes_df[ongoing_spikes_df.health_descriptor.isin(severities)]
+                                                            
+        if len(severe_ongoing_spikes_df) > 0: # If an alert is more severe
+            
+            severe_sensor_ids = severe_ongoing_spikes_df.sensor_id.to_list()
+            
+            Update_sensitive(severe_sensor_ids)
+            
     # ~~~~~~~~~~~~~~~~
     # c) Ended Alerts
 
@@ -105,7 +132,7 @@ def Add_active_alerts(new_spikes_df, runtime):
     start_times = new_spikes_df.update_frequency.apply(lambda x: runtime - dt.timedelta(minutes=x))  # Technically the alert's start_time is earlier. Depends on the time interval of the averages' reported by the monitor 
 
     # Add necessary columns to formatted_df
-
+    
     formatted_df['start_time'] = start_times.apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
     formatted_df['last_update'] = runtime.strftime('%Y-%m-%d %H:%M:%S')
     formatted_df['avg_reading'] = current_readings
@@ -138,14 +165,14 @@ def Update_active_alerts(ongoing_spikes_df, runtime):
     # Last, we compute/update last_update, max_reading, avg_reading
     
     # The average part is tricky. We are using this equation:
-    # Let the previous duration (in minutes) of the alert be, t, and the number of minutes since that update be delta
+    # Let the previous duration (in minutes) of the alert be, t, the average be, u, and the number of minutes since that update be delta
     # Then
     # avg = u_(t+delta) = ((t x u_t) + (delta x current_reading))/(t + delta) 
 
     cmd_template = sql.SQL('''
     WITH temp_table as
 	(SELECT sensor_id,
-	 	last_update - start_time as previous_time_diff,
+	        last_update - start_time as previous_time_diff,
 	    {} - last_update as timestep_time_diff
 	FROM "Active Alerts"
 	WHERE sensor_id = {}
@@ -181,6 +208,24 @@ WHERE a.sensor_id = u.sensor_id;
                                  )
 
         psql.send_update(cmd)
+        
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Update_sensitive(severe_sensor_ids):
+    '''
+    This function will update "sensitive" to False in "Active Alerts" for the given sensor_ids
+    '''
+    
+    if len(severe_sensor_ids) > 0:
+        cmd = sql.SQL('''UPDATE "Active Alerts"
+        SET sensitive = FALSE
+        WHERE sensor_id = ANY ( {} )
+        AND sensitive = TRUE;
+        ''').format(sql.Literal(severe_sensor_ids))
+    
+        psql.send_update(cmd)
+    
+    
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ENDED
 
@@ -198,12 +243,12 @@ def Add_archived_alerts(ended_spikes_df):
     cmd = sql.SQL('''
     WITH ended_alerts as
     (
-SELECT alert_id, sensor_id, start_time, last_update - start_time as time_diff, avg_reading, max_reading
+SELECT alert_id, sensor_id, sensitive, start_time, last_update - start_time as time_diff, avg_reading, max_reading
 FROM "Active Alerts"
 WHERE sensor_id = ANY ({})
     )
-    INSERT INTO "Archived Alerts" (alert_id, sensor_id, start_time, duration_minutes, avg_reading, max_reading)
-    SELECT alert_id, sensor_id, start_time, (((DATE_PART('day', time_diff) * 24) + 
+    INSERT INTO "Archived Alerts" (alert_id, sensor_id, sensitive, start_time, duration_minutes, avg_reading, max_reading)
+    SELECT alert_id, sensor_id, sensitive, start_time, (((DATE_PART('day', time_diff) * 24) + 
     DATE_PART('hour', time_diff)) * 60 + DATE_PART('minute', time_diff)) as duration_minutes, avg_reading, max_reading
     FROM ended_alerts;
     ''').format(sql.Literal(sensor_indices))

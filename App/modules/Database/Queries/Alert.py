@@ -17,7 +17,7 @@ def Get_alerted_sensor_ids():
     '''
     
     cmd = sql.SQL('''SELECT sensor_id 
-    FROM "Active Alerts"
+    FROM "Active Alerts";
     ''')
     
     response = psql.get_response(cmd)   
@@ -27,3 +27,27 @@ def Get_alerted_sensor_ids():
 
     
     return sensor_ids
+ 
+# ~~~~~~~~~~~~~~~~~~ 
+   
+def Get_max_active_alert_id():
+    '''
+    Get the highest alert_id in active alerts
+    It will return 0 if there are none
+    Returns an integer
+    '''
+    
+    cmd = sql.SQL('''SELECT MAX(alert_id) 
+    FROM "Active Alerts";
+    ''')
+    
+    
+    response = psql.get_response(cmd)
+    
+    if response[0][0] == None:
+        max_alert_id = 0
+    else:
+        max_alert_id = response[0][0]
+
+    return max_alert_id 
+    
