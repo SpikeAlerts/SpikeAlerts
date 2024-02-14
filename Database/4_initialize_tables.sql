@@ -29,7 +29,8 @@ CREATE TABLE "Daily Log" -- This is to store important daily metrics
      new_POIs int DEFAULT 0,
      new_sensors int DEFAULT 0,
      retired_sensors int DEFAULT 0,
-	 alerts_sent int DEFAULT 0
+	 alerts_sent int DEFAULT 0,
+	 reports_for_day int DEFAULT 0
     );
     
 CREATE TABLE "extent" -- This is to define the bounding box of the project
@@ -90,8 +91,8 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 	  start_time timestamp,
 	  duration_minutes integer, -- How long it lasted in minutes
 	  avg_reading float, -- Average value registered
-	   max_reading float, -- Maximum value registered
-	   UNIQUE (sensor_id, sensitive)); -- Ensure that each alert has a unique sensor_id, sensitive combo
+	   max_reading float -- Maximum value registered
+	   );
 	   
 -- POIs
 
@@ -99,7 +100,7 @@ CREATE TABLE "Points of Interest"-- This is our internal record keeping for POIs
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
 	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
-	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids not yet notified about
+	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
 	sensitive boolean DEFAULT FALSE, -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	active boolean DEFAULT TRUE -- Are we monitoring this point?
 	);
@@ -143,5 +144,82 @@ END$$;
 -- Create Views
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Sensors and Sensor Type Information merged
 
+CREATE VIEW base.sensor_ids_w_info AS
+(
+SELECT s.sensor_id, i.sensor_type, i.monitor_name, i.api_fieldname, 
+       i.pollutant, i.metric, i.thresholds, i.radius_meters, i.last_update, i.update_frequency
+FROM base."Sensor Type Information" i
+RIGHT JOIN base."Sensors" s ON (i.sensor_type = s.sensor_type)
+);
 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Sensors with an active alert
+
+CREATE VIEW base.alerted_sensors AS
+(
+SELECT s.sensor_id, s.name, s.sensor_type,
+       a.alert_id, a.sensitive, a.start_time, s.last_seen,
+       s.current_reading, a.avg_reading, a.max_reading,
+	   s.geometry 
+FROM base."Active Alerts" a
+INNER JOIN base."Sensors" s ON (a.sensor_id = s.sensor_id)
+);
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Alerts, Sensors, and Sensor Type Information merged
+
+CREATE VIEW base.alerts_w_info AS
+(
+SELECT s.sensor_id, s.name, s.alert_id, s.sensitive, s.start_time, s.last_seen,
+	   i.pollutant, i.metric, i.thresholds, i.radius_meters,
+       s.current_reading, s.avg_reading, s.max_reading,
+	   s.geometry
+FROM base.alerted_sensors s
+INNER JOIN base.sensor_ids_w_info i ON (s.sensor_id = i.sensor_id)
+);
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Alert_ids aggregated to nearby POI_ids
+
+CREATE VIEW base.pois_w_alert_ids AS
+(
+SELECT p.poi_id, ARRAY_AGG(s.alert_id) as nearby_alerts
+FROM base."Points of Interest" p, base.alerts_w_info s
+WHERE p.sensitive = s.sensitive
+AND p.active = TRUE
+AND ST_DWithin(ST_Transform(p.geometry, 26915),
+			   ST_Transform(s.geometry, 26915),
+			   s.radius_meters)
+GROUP BY p.poi_id
+);
+ 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- Create Public Views
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CREATE VIEW public.alerted_sensors AS
+(
+SELECT s.name, a.start_time, s.last_seen,
+       s.current_reading, a.avg_reading, a.max_reading,
+	   s.geometry
+FROM base."Active Alerts" a
+INNER JOIN base."Sensors" s ON (a.sensor_id = s.sensor_id)
+);
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- Create Functions
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Array differences
+
+CREATE or REPLACE function array_diff(array1 anyarray, array2 anyarray)
+returns anyarray language sql immutable as $$
+    select coalesce(array_agg(elem), '{}')
+    from unnest(array1) elem
+    where elem <> all(array2)
+$$;

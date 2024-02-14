@@ -140,3 +140,57 @@ VALUES (
     10 
 ); 
 ```
+
+---
+---
+# 8) Add POIs 
+Use any geometry (Points, Multipoints, Lines, Polygons)
+
+## An Example of SQL to do this for the Smith Foundry is:
+
+```
+INSERT INTO base."Points of Interest" 
+	(
+	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
+	geometry -- Can be any geometry
+	)
+VALUES 
+	(
+	TRUE,
+	ST_SetSRID(ST_MakePoint(-93.24553722585783, 44.95170035308462), 4326)
+	);
+```
+
+## An Example of SQL to do this for the NW of HERC is:
+
+```
+INSERT INTO base."Points of Interest" 
+	(
+	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
+	geometry -- Can be any geometry
+	)
+VALUES 
+	(
+	TRUE,
+	ST_SetSRID(ST_MakePoint(-93.28983454197842, 44.99135801605877), 4326)
+	);
+```
+
+## An Example of SQL to do this for multiple points NW of Smith Foundry (though multipoints maybe aren't best idea):
+
+```
+INSERT INTO base."Points of Interest" 
+	(
+	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
+	geometry -- Can be any geometry
+	)
+VALUES 
+	(
+	TRUE,
+	ST_Collect(ARRAY[ST_GeomFromText('POINT(-93.24737530547333 44.95200401860498)', 4326),
+					 ST_GeomFromText('POINT(-93.25003219449039 44.951945865667824)', 4326),
+					 ST_GeomFromText('POINT(-93.24737530547333 44.95374857932035)', 4326)
+					]
+			  )
+	);
+```
