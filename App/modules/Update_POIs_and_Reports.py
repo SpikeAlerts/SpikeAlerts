@@ -15,7 +15,7 @@ from psycopg2 import sql
 
 def workflow(sensors_df, runtime):
     '''
-    Runs the full workflow to update our database tables "Points of Interest" and "Reports Archive". 
+    Runs the full workflow to update our database tables "Places of Interest" and "Reports Archive". 
     This involves the following:
 
     a) Check for newly alerted POIs
@@ -103,10 +103,10 @@ def Update_active_and_cached_alerts():
 		       COALESCE(a.nearby_alerts, {}) as nearby_alerts, 
 		       p.active_alerts,
 		       p.cached_alerts
-        FROM "Points of Interest" p
+        FROM "Places of Interest" p
         LEFT JOIN pois_w_alert_ids a ON (a.poi_id = p.poi_id)
     )
-    UPDATE "Points of Interest" p
+    UPDATE "Places of Interest" p
     SET active_alerts = a.nearby_alerts,
 	    cached_alerts = ARRAY_CAT(a.cached_alerts, ARRAY_DIFF(a.active_alerts, a.nearby_alerts))
     FROM merged a
@@ -140,7 +140,7 @@ def Initialize_report(poi_id, reports_for_day, runtime):
     cmd = sql.SQL('''WITH alert_cache as
 (
 	SELECT cached_alerts
-	FROM "Points of Interest"
+	FROM "Places of Interest"
 	WHERE poi_id = {} --inserted record_id
 ), alerts as
 (
@@ -207,7 +207,7 @@ def Clear_cached_alerts(poi_ids_to_end_alert):
     
     
     cmd = sql.SQL('''
-    UPDATE "Points of Interest"
+    UPDATE "Places of Interest"
     SET cached_alerts = {}
     WHERE poi_id = ANY ({});
     ''').format(sql.Literal('{}'),

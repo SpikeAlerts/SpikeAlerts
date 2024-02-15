@@ -4,3 +4,4 @@
 *.DS_Store
 *.cpython-310.pyc
 **/.ipynb_checkpoints/*
+*.copy

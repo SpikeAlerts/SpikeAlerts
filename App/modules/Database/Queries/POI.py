@@ -13,13 +13,13 @@ from modules.Database import Basic_PSQL as psql
 
 def Get_pois_to_alert():
     '''
-    This function will return a list of poi_ids from "Points of Interest" that are within the distance from an active alert, active, and have empty active and cached alerts
+    This function will return a list of poi_ids from "Places of Interest" that are within the distance from an active alert, active, and have empty active and cached alerts
     '''
     
     cmd = sql.SQL('''
     SELECT a.poi_id
     FROM pois_w_alert_ids a
-    INNER JOIN "Points of Interest" p ON (a.poi_id = p.poi_id)
+    INNER JOIN "Places of Interest" p ON (a.poi_id = p.poi_id)
     WHERE p.active_alerts = {}
     AND p.cached_alerts = {};
     ''').format(sql.Literal('{}'),
@@ -35,12 +35,12 @@ def Get_pois_to_alert():
 
 def Get_pois_to_end_alert():
     '''
-    This function will return a list of poi_ids from "Points of Interest" that have empty active_alerts and non-empty cached_alerts
+    This function will return a list of poi_ids from "Places of Interest" that have empty active_alerts and non-empty cached_alerts
     '''
     
     cmd = sql.SQL('''
     SELECT poi_id
-    FROM "Points of Interest" p
+    FROM "Places of Interest" p
     WHERE active = True
     AND active_alerts = {}
     AND ARRAY_LENGTH(cached_alerts, 1) > 0;
@@ -65,7 +65,7 @@ SELECT p.poi_id,
 	   s.pollutant, s.metric, s.thresholds,
        s.current_reading, s.avg_reading, s.max_reading,
 	   p.geometry
-FROM "Points of Interest" p, alerts_w_info s
+FROM "Places of Interest" p, alerts_w_info s
 WHERE ST_DWithin(
 				ST_Transform(p.geometry, 26915),
 				ST_Transform(s.geometry, 26915),

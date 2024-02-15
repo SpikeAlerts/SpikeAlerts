@@ -60,7 +60,7 @@ def main(base_config, runtime, next_system_update):
         
         # ~~~~~~~~~~~~~~~~~~~~~
 
-        # 4) Workflow for updating our database tables "Points of Interest" and "Reports Archive"
+        # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
         poi_ids_to_alert, poi_ids_to_end_alert = Update_POIs_and_Reports.workflow(sensors_df, runtime)
 

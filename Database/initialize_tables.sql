@@ -96,8 +96,9 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 	   
 -- POIs
 
-CREATE TABLE "Points of Interest"-- This is our internal record keeping for POIs (AKA users)
+CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs (AKA users)
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
+	name varchar(100), -- A name for the POI. Can be null.
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
 	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
 	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
@@ -132,9 +133,9 @@ execute format('SET SEARCH_PATH = "$user", public, topology;
 			   ADD geometry geometry; -- A Point
 			   CREATE INDEX sensor_gid ON %I."Sensors" USING GIST(geometry);  -- Create spatial index for sensors
 			   
-			   ALTER TABLE %I."Points of Interest"
+			   ALTER TABLE %I."Places of Interest"
 			   ADD geometry geometry; -- A Point
-			   CREATE INDEX poi_gid ON %I."Points of Interest" USING GIST(geometry);  -- Create spatial index for POIs
+			   CREATE INDEX poi_gid ON %I."Places of Interest" USING GIST(geometry);  -- Create spatial index for POIs
 			   '
 			   , schemaname, schemaname, schemaname, schemaname);
 END$$;
@@ -186,7 +187,7 @@ INNER JOIN base.sensor_ids_w_info i ON (s.sensor_id = i.sensor_id)
 CREATE VIEW base.pois_w_alert_ids AS
 (
 SELECT p.poi_id, ARRAY_AGG(s.alert_id) as nearby_alerts
-FROM base."Points of Interest" p, base.alerts_w_info s
+FROM base."Places of Interest" p, base.alerts_w_info s
 WHERE p.sensitive = s.sensitive
 AND p.active = TRUE
 AND ST_DWithin(ST_Transform(p.geometry, 26915),

@@ -34,7 +34,7 @@ Or use pgAdmin or another database manager
 
 ---
 ---
-## 3) Initialize the base schema and postgis extensions
+## 5) Initialize the base schema and postgis extensions
 Careful with this codeblock. It cascade deletes POSTGIS which will remove geometry columns of all tables **within your entire database**... You may want to remove that line.
 
 ### SQL
@@ -66,7 +66,7 @@ END$$;
 
 ---
 ---
-## 4) Run the SQL in the file /4_initialize_tables.sql
+## 6) Run the SQL in the file /initialize_tables.sql
 
 Copy, paste, and execute the sql or use:
 
@@ -75,7 +75,7 @@ Copy, paste, and execute the sql or use:
 
 ---
 ---
-## 5) Create the "App" user
+## 7) Create the "App" user
 
 ## PSQL:
 ```
@@ -92,7 +92,7 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA base TO app;
 
 ---
 ---
-# 6) Insert Extent
+# 8) Insert Extent
 
 Fill in extent.csv with appropriate latitudes and longitudes and run this 
 
@@ -111,7 +111,9 @@ VALUES (-93.3303753775222, -93.1930625073825, 44.8896883413448, 45.0521464662874
 ```
 ---
 ---
-# 7) Add Sensor Types
+# 9) Add Sensor Types
+
+More examples are given in add_sensor_types.sql
 
 ## An Example of SQL to do this for PurpleAir is:
 
@@ -143,54 +145,66 @@ VALUES (
 
 ---
 ---
-# 8) Add POIs 
+# 10) Add POIs 
 Use any geometry (Points, Multipoints, Lines, Polygons)
 
-## An Example of SQL to do this for the Smith Foundry is:
+## SQL Examples
+
+### Center(ish) Point of Smith Foundry
 
 ```
-INSERT INTO base."Points of Interest" 
+INSERT INTO base."Places of Interest" 
 	(
+	name, -- varchar(100), -- A name for the POI. Can be null.
 	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	geometry -- Can be any geometry
 	)
 VALUES 
 	(
+	'Smith Foundry Point',
 	TRUE,
 	ST_SetSRID(ST_MakePoint(-93.24553722585783, 44.95170035308462), 4326)
 	);
 ```
 
-## An Example of SQL to do this for the NW of HERC is:
+### A point NW of HERC:
 
 ```
-INSERT INTO base."Points of Interest" 
+INSERT INTO base."Places of Interest" 
 	(
+	name, -- varchar(100), -- A name for the POI. Can be null.
 	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	geometry -- Can be any geometry
 	)
 VALUES 
 	(
+	'Point NW of Hennepin Energy Recovery Center',
 	TRUE,
 	ST_SetSRID(ST_MakePoint(-93.28983454197842, 44.99135801605877), 4326)
 	);
 ```
 
-## An Example of SQL to do this for multiple points NW of Smith Foundry (though multipoints maybe aren't best idea):
+### An polygon NW of Smith Foundry:
 
 ```
-INSERT INTO base."Points of Interest" 
+WITH geom as
+(
+SELECT ST_MakePolygon( ST_AddPoint(foo.open_line, ST_StartPoint(foo.open_line)) ) as poly
+	FROM (
+	SELECT ST_GeomFromText('LINESTRING(-93.24737530547333 44.95200401860498,
+									   -93.25003219449039 44.951945865667824,
+									   -93.24737530547333 44.95374857932035)
+									   ', 4326
+									   ) AS open_line
+		  ) as foo
+)
+INSERT INTO base."Places of Interest" 
 	(
+    name, -- varchar(100), -- A name for the POI. Can be null.
 	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	geometry -- Can be any geometry
 	)
-VALUES 
-	(
-	TRUE,
-	ST_Collect(ARRAY[ST_GeomFromText('POINT(-93.24737530547333 44.95200401860498)', 4326),
-					 ST_GeomFromText('POINT(-93.25003219449039 44.951945865667824)', 4326),
-					 ST_GeomFromText('POINT(-93.24737530547333 44.95374857932035)', 4326)
-					]
-			  )
-	);
+SELECT
+'Area NW of Smith Foundry', TRUE, poly 
+FROM geom;
 ```
