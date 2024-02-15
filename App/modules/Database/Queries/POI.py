@@ -33,18 +33,42 @@ def Get_pois_to_alert():
     
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_pois_to_end_alert():
+def Get_pois_to_end_alert(runtime, report_lag):
     '''
-    This function will return a list of poi_ids from "Places of Interest" that have empty active_alerts and non-empty cached_alerts
+    This function will return a list of poi_ids from "Places of Interest" 
+    that have empty active_alerts and non-empty cached_alerts
+            where end_time of any alert in cache + report_lag < runtime 
     '''
     
+    formatted_runtime = runtime.strftime('%Y-%m-%d %H:%M:%S')
+    
     cmd = sql.SQL('''
+    
+    -- Select the pois with empty active_alerts & non-empty cached_alerts
+    WITH not_alerted_pois as
+    (
+	    SELECT poi_id, cached_alerts
+	    FROM "Places of Interest" p
+	    WHERE active = True
+	    AND active_alerts = {}
+	    AND ARRAY_LENGTH(cached_alerts, 1) > 0
+    ), pois_w_endtimes as
+    
+    -- Get max endtime of all alerts in cache for each poi
+    (
+    SELECT p.poi_id, MAX(a.start_time + INTERVAL '1 Minutes' * a.duration_minutes) as endtime
+    FROM "Archived Alerts" a
+    RIGHT JOIN not_alerted_pois p ON (a.alert_id = ANY (p.cached_alerts))
+    GROUP BY p.poi_id
+    ) 
+    
+    -- Select the poi_ids where endtime + report_lag < runtime (nowish)
     SELECT poi_id
-    FROM "Places of Interest" p
-    WHERE active = True
-    AND active_alerts = {}
-    AND ARRAY_LENGTH(cached_alerts, 1) > 0;
-    ''').format(sql.Literal('{}'))
+    FROM pois_w_endtimes
+    WHERE endtime +  INTERVAL '1 Minutes' * {} <= {};
+    ''').format(sql.Literal('{}'),
+                sql.Literal(report_lag),
+                sql.Literal(formatted_runtime))
                 
     response = psql.get_response(cmd)
     

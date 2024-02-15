@@ -13,15 +13,22 @@ from psycopg2 import sql
 
 ## Workflow
 
-def workflow(sensors_df, runtime):
+def workflow(sensors_df, runtime, report_lag):
     '''
     Runs the full workflow to update our database tables "Places of Interest" and "Reports Archive". 
     This involves the following:
 
     a) Check for newly alerted POIs
     b) Update active_alerts and cached_alerts
-    c) Check for POIs with empty active_alerts and non-empty cached_alerts
+    c) Check for POIs with empty active_alerts and non-empty cached_alerts 
+        where end_time of any alert_id in cached_alerts + report_lag < runtime
     d) Write Reports & Clear cached_alerts for all in C
+    
+    Alter sensor health thresholds to test
+    
+    UPDATE "Sensor Type Information"
+    SET thresholds = ARRAY[0, 12.1, 35.5, 55.5, 150.5, 250.5, 1000],
+    last_update = last_update - Interval '10 minutes';
     
     Parameters:
     
@@ -36,9 +43,11 @@ def workflow(sensors_df, runtime):
     radius_meters - int - max distance sensor is relevant
     sensor_status - text - one of these categories: new_spike, ongoing_spike, ended_spike, unknown, or ordinary
     
-    runtime - approximate time that the values for above dataframe were acquired
+    runtime - datetime - approximate time that the values for above dataframe were acquired
     
-    returns 2 lists: poi_ids_to_alert, poi_ids_to_end_alert
+    report_lag - int - minutes to delay writing a report
+    
+    returns 3 lists: poi_ids_to_alert, poi_ids_to_end_alert, new_reports (start_time, duration_minutes, severity, report_id)
     '''
 
     # ~~~~~~~~~~~~~~~~
@@ -54,7 +63,7 @@ def workflow(sensors_df, runtime):
     # ~~~~~~~~~~~~~~~~
     # c) Check for POIs with empty active_alerts and non-empty cached_alerts
     
-    poi_ids_to_end_alert = poi_query.Get_pois_to_end_alert()
+    poi_ids_to_end_alert = poi_query.Get_pois_to_end_alert(runtime, report_lag)
     
     # ~~~~~~~~~~~~~~~~
     # d) Write Reports & clear cache for poi_ids_to_end_alert
@@ -65,13 +74,13 @@ def workflow(sensors_df, runtime):
     
         reports_for_day = query.Get_reports_for_day(runtime)
         
-        print(reports_for_day)
+        new_reports = [] # This is a list of tuples containing (start_time, duration_minutes, severity, report_id)
     
         for poi_id in poi_ids_to_end_alert:
         
             start_time, duration_minutes, severity, report_id = Initialize_report(poi_id, reports_for_day, runtime)
             
-            print(start_time, duration_minutes, severity, report_id)
+            new_reports += [(start_time, duration_minutes, severity, report_id)]
             
             reports_for_day += 1 
             
@@ -83,9 +92,9 @@ def workflow(sensors_df, runtime):
         
         Clear_cached_alerts(poi_ids_to_end_alert)
             
-    print(poi_ids_to_alert, poi_ids_to_end_alert)
+    #print(poi_ids_to_alert, poi_ids_to_end_alert)
     
-    return poi_ids_to_alert, poi_ids_to_end_alert
+    return poi_ids_to_alert, poi_ids_to_end_alert, new_reports
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -137,27 +146,28 @@ def Initialize_report(poi_id, reports_for_day, runtime):
     # Then aggregate from those alerts the start_time, time_difference
     # Lastly, it will insert all the information into "Reports Archive"
     
-    cmd = sql.SQL('''WITH alert_cache as
+    cmd = sql.SQL('''WITH poi_alert_cache as
 (
-	SELECT cached_alerts
+	SELECT name, cached_alerts
 	FROM "Places of Interest"
 	WHERE poi_id = {} --inserted record_id
 ), alerts as
 (
 	SELECT MIN(p.start_time) as start_time,
 			{} - MIN(p.start_time) as time_diff
-	FROM "Archived Alerts" p, alert_cache c
+	FROM "Archived Alerts" p, poi_alert_cache c
 	WHERE p.alert_id = ANY (c.cached_alerts)
 )
-INSERT INTO "Reports Archive"
+INSERT INTO "Reports Archive" (report_id, poi_name, start_time, duration_minutes, severity, alert_ids)
 SELECT {}, -- Inserted report_id
+        p.name,
         a.start_time, -- start_time
 		(((DATE_PART('day', a.time_diff) * 24) + 
     		DATE_PART('hour', a.time_diff)) * 60 + 
 		 	DATE_PART('minute', a.time_diff)) as duration_minutes,
 			'unhealthy', -- NOT DONE - the severity of the alert
-		c.cached_alerts
-FROM alert_cache c, alerts a; 
+		p.cached_alerts
+FROM poi_alert_cache p, alerts a; 
 ''').format(sql.Literal(poi_id),
             sql.Literal(formatted_runtime),
             sql.Literal(report_id))

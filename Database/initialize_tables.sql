@@ -98,7 +98,7 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 
 CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs (AKA users)
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
-	name varchar(100), -- A name for the POI. Can be null.
+	name varchar(100), -- A name for the POI. Can be null for privacy
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
 	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
 	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
@@ -110,6 +110,7 @@ CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs
 
 CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each POI
 	(report_id varchar(12) PRIMARY KEY, -- Unique Identifier with format #####-MMDDYY
+	poi_name varchar(100), -- A name to attach to the POI. Can be null for privacy
 	start_time timestamp,
 	duration_minutes integer,
 	severity text, -- One of these categories: good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous
@@ -190,8 +191,8 @@ SELECT p.poi_id, ARRAY_AGG(s.alert_id) as nearby_alerts
 FROM base."Places of Interest" p, base.alerts_w_info s
 WHERE p.sensitive = s.sensitive
 AND p.active = TRUE
-AND ST_DWithin(ST_Transform(p.geometry, 26915),
-			   ST_Transform(s.geometry, 26915),
+AND ST_DWithin(ST_Transform(p.geometry, 26915), -- CHANGE THIS!!
+			   ST_Transform(s.geometry, 26915), -- CHANGE THIS!!
 			   s.radius_meters)
 GROUP BY p.poi_id
 );

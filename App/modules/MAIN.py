@@ -13,6 +13,15 @@ This function is the workflow of one regular update
 # 3 = Update_Alerts_Tables - Create new alerts, update ongoing alerts, and end old alerts
  
 # 4 = Update_POIs_and_Reports - Updates the POI & reports tables
+
+At the end there are 2 lists of poi_ids (Places of Interest IDs)
+
+poi_ids_to_alert (POIs with new AQ event)
+and 
+poi_ids_to_end_alert (POIs with a new report written "end of event")     
+
+And one list of (start_time, duration_minutes, severity, report_id)
+                     with the same index as poi_ids_to_end_alert  
 '''
 
 # Import the modules listed above
@@ -35,7 +44,7 @@ def main(base_config, runtime, next_system_update):
     
     # ~~~~~~~~~~~~~~~~~~~~~
     
-    # 0) System Update? - Only sensors for now
+    # 0) System Update? - Only sensors right now
     
     if runtime > next_system_update:
         #pass
@@ -62,6 +71,6 @@ def main(base_config, runtime, next_system_update):
 
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
-        poi_ids_to_alert, poi_ids_to_end_alert = Update_POIs_and_Reports.workflow(sensors_df, runtime)
+        poi_ids_to_alert, poi_ids_to_end_alert, new_reports = Update_POIs_and_Reports.workflow(sensors_df, runtime, base_config['REPORT_LAG'])
 
     return next_system_update
