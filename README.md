@@ -14,6 +14,48 @@ Here's what's in the repository right now in order of what must be done to run y
 + /Database - Files to initialize the database
 + /App - The SpikeAlerts Application. Run with python App/spikealerts.py
 
+## How to Set Up
+
+### 1) Create the Database
+
+Please see the readme in the Database folder
+
+### 2) Fill in the .env's
+
+`.env.example` and `.env.sensors.example` have some directions on how to create your own environment files. Presently, the extensions are not ready
+
+### 3) Set up Python Environment
+
+This can be done in a number of ways (eg. [miniconda](https://docs.anaconda.com/free/miniconda/index.html)). The Python requirements are in `requirements.txt`. If you use miniconda, below is an example of an `environment.yml` file that will set up an environment called SpikeAlerts. You can create this environment with `conda env create -f environment.yml`
+
+environment.yml:
+```
+name: SpikeAlerts
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python =3.10
+  - pip
+  - geopandas
+  - psycopg2-binary
+  - python-dotenv
+```
+
+### 4) Run the App!
+
+Here's how you can run the app from a terminal:
+
+```
+cd home/Documents/GitHub/SpikeAlerts # Change directory to this Repository
+conda activate SpikeAlerts # Activate the Python Environment
+python App/spikealerts.py # Run the App
+```
+
+### 5) Check out the database
+
+You should be able to see the "Sensors", "Active Alerts", "Archived Alerts", "Places of Interest" tables updating. 
+
 <!--+ Basic_Python_Requirements.txt - The python requirements for the VM application
 + Conda_Developer_Environment.yml - Conda environment for all scripts and exploring data
 + .env.example - An example of a .env file that is needed for full functionality
