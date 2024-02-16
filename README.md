@@ -1,10 +1,10 @@
 # Hello!
 
-We are a collective working to make a free and open source alert/reporting system for Air Quality ("SpikeAlerts").
+We are a collective working to make a free and open source alert & reporting system for Air Quality called "SpikeAlerts".
 
 ## What is this Repository?
 
-This is a repository to document and develop the base of SpikeAlerts. SpikeAlert instances can (and should) be set up by anyone, anywhere! 
+This code is the base of a SpikeAlerts system. All steps to set up an instance of SpikeAlerts should be included. Anyone, anywhere can set up their own instance.
 
 A general overview of the repository: 
 
@@ -66,11 +66,12 @@ Priya Dalal-Whelan
 
 Dan Raskin
 
-Doug Carmody
-
 Mateo Frumholtz
 
-## Other Contributors (organizing, discussion, feedback, research, sensor installation & maintenance...)
+Doug Carmody
+
+## Other Contributors 
+Thank you for organizing, discussion, feedback, research, sensor installation & maintenance...
 
 Connor Stratton, Urszula Parfieniuk, Nazir Khan, Jenni Lansing, Lucy Shapiro, Alice Froehlich, Megan Greenberg, Mary Marek-Spartz, Kerry Wang, Daniel Furata, Eamonn Fetherston, Jake Ford
 
