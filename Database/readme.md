@@ -26,7 +26,7 @@ ALTER ROLE mgmt WITH PASSWORD 'postgres'; -- Change this!
 
 Command line: psql "host=IP_ADDRESS dbname='SpikeAlerts' user=mgmt password=<your_password>"
 
-or psql -h XXX.XXX.XXX.XXXX -U mgmt -d 'SpikeAlerts'
+or psql -h XXX.XXX.XXXX -U mgmt -d 'SpikeAlerts'
 
 and then type in your password
 
@@ -71,7 +71,7 @@ END$$;
 Copy, paste, and execute the sql or use:
 
 ### PSQL: 
-`-f 4_initialize_tables.sql`
+`-f initialize_tables.sql`
 
 ---
 ---
@@ -184,7 +184,7 @@ VALUES
 	);
 ```
 
-### An polygon NW of Smith Foundry:
+### A polygon NW of Smith Foundry:
 
 ```
 WITH geom as
@@ -192,18 +192,18 @@ WITH geom as
 SELECT ST_MakePolygon( ST_AddPoint(foo.open_line, ST_StartPoint(foo.open_line)) ) as poly
 	FROM (
 	SELECT ST_GeomFromText('LINESTRING(-93.24737530547333 44.95200401860498,
-									   -93.25003219449039 44.951945865667824,
-									   -93.24737530547333 44.95374857932035)
-									   ', 4326
-									   ) AS open_line
-		  ) as foo
+					   -93.25003219449039 44.951945865667824,
+					   -93.24737530547333 44.95374857932035)
+					   ', 4326
+					   ) AS open_line
+	     ) as foo
 )
 INSERT INTO base."Places of Interest" 
-	(
-    name, -- varchar(100), -- A name for the POI. Can be null.
-	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
-	geometry -- Can be any geometry
-	)
+(
+name, -- varchar(100), -- A name for the POI. Can be null.
+sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
+geometry -- Can be any geometry
+)
 SELECT
 'Area NW of Smith Foundry', TRUE, poly 
 FROM geom;
