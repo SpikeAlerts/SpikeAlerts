@@ -72,7 +72,7 @@ Doug Carmody
 
 ## Other Contributors 
 
-Connor Stratton, Urszula Parfieniuk, Nazir Khan, Jenni Lansing, Lucy Shapiro, Alice Froehlich, Megan Greenberg, Mary Marek-Spartz, Kerry Wang, Daniel Furata, Eamonn Fetherston, Jake Ford
+Connor Stratton, Urszula Parfieniuk, Michael Wilson, Nazir Khan, Jenni Lansing, Lucy Shapiro, Alice Froehlich, Megan Greenberg, Mary Marek-Spartz, Kerry Wang, Daniel Furata, Eamonn Fetherston, Jake Ford
 
 Thank you for organizing, discussion, feedback, research, sensor installation & maintenance...
 
