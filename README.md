@@ -71,8 +71,9 @@ Mateo Frumholtz
 Doug Carmody
 
 ## Other Contributors 
-Thank you for organizing, discussion, feedback, research, sensor installation & maintenance...
 
 Connor Stratton, Urszula Parfieniuk, Nazir Khan, Jenni Lansing, Lucy Shapiro, Alice Froehlich, Megan Greenberg, Mary Marek-Spartz, Kerry Wang, Daniel Furata, Eamonn Fetherston, Jake Ford
+
+Thank you for organizing, discussion, feedback, research, sensor installation & maintenance...
 
 We also acknowledge the preliminary work of the [Quality Air, Quality Cities team](https://github.com/RTGS-Lab/QualityAirQualityCities).
