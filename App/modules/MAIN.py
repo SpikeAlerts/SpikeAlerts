@@ -22,6 +22,12 @@ poi_ids_to_end_alert (POIs with a new report written "end of event")
 
 And one list of (start_time, duration_minutes, severity, report_id)
                      with the same index as poi_ids_to_end_alert  
+                     
+# 5 = Send Alerts - NOT DONE
+
+# 6 = Periodically send reports to manager/orgs & Archive Database - NOT DONE
+
+# 7 = Calculate next update time
 '''
 
 # Import the modules listed above
@@ -73,6 +79,8 @@ def main(base_config, runtime, next_system_update):
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
         poi_ids_to_alert, poi_ids_to_end_alert, new_reports = Update_POIs_and_Reports.workflow(sensors_df, runtime, base_config['REPORT_LAG'])
+        
+    # 7) Get the next regular update time
         
     next_regular_update = sensor_query.Get_next_regular_update(base_config['TIMEZONE'])
 
