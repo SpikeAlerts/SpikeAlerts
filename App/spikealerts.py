@@ -65,9 +65,6 @@ pprint(base_config)
 
 # Calculate Global Constants
 
-# timestep = Time in between updates in minutes (integer) 
-timestep = int(base_config['TIMESTEP'])
-
 # stoptime = When will we stop the program? (datetime)
 days_to_run = int(base_config['DAYS_TO_RUN'])
 starttime = dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])) 
@@ -81,7 +78,6 @@ next_system_update = starttime.replace(hour=8, minute = 0, second = 0) # 8am tod
 print(f'''Beginning program
 
 Running until {stoptime}
-Updating every {timestep} minutes
 ''')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +95,6 @@ else:
 
         # Time
         now = dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])) # Now
-        next_regular_update = now + dt.timedelta(minutes=timestep) # The datetime for next regular update
 
         if stoptime < now: # Check if we've hit stoptime
             break
@@ -109,7 +104,7 @@ else:
         try:
             print('calling main')
             print('Runtime: ', now)
-            next_system_update = main(base_config, now, next_system_update)
+            next_regular_update, next_system_update = main(base_config, now, next_system_update)
             print('made it through main')
             
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,8 +119,7 @@ else:
         # Finally, sleep until next regular update
         
         finally:
-            # Calculate how long to sleep 
-            # usually close to timestep, but main can take seconds to run 
+            # Calculate how long to sleep until next_regular_update time (see modules/Database/Sensor.py)
             now = dt.datetime.now(pytz.timezone(base_config['TIMEZONE'])) # Now
             sleep_seconds = (next_regular_update - now).total_seconds() # Time until next regular update
             print('Sleeping for', sleep_seconds, 'seconds\n~~~~~~~~~~~\n')

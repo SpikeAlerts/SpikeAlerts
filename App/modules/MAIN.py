@@ -31,6 +31,7 @@ from modules import GetSort_Spikes # 1
 from modules import Update_Sensor_Tables # 2
 from modules import Update_Alert_Tables # 3
 from modules import Update_POIs_and_Reports # 4
+from modules.Database.Queries import Sensor as sensor_query # 7
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -39,7 +40,7 @@ def main(base_config, runtime, next_system_update):
     '''
     This is the main workflow of one iteration of the SpikeAlerts App
     
-    It should return next_system_update (datetime)    
+    It should return next_regular_update, next_system_update (both are datetimes)    
     '''
     
     # ~~~~~~~~~~~~~~~~~~~~~
@@ -72,5 +73,7 @@ def main(base_config, runtime, next_system_update):
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
         poi_ids_to_alert, poi_ids_to_end_alert, new_reports = Update_POIs_and_Reports.workflow(sensors_df, runtime, base_config['REPORT_LAG'])
+        
+    next_regular_update = sensor_query.Get_next_regular_update(base_config['TIMEZONE'])
 
-    return next_system_update
+    return next_regular_update, next_system_update

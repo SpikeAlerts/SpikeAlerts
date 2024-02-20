@@ -4,6 +4,10 @@
 
 import pandas as pd
 
+# Time
+
+import pytz # Timezones
+
 # Database
 
 from psycopg2 import sql
@@ -239,5 +243,34 @@ def Get_not_elevated_sensors(runtime, alert_lag = 0):
 
     sensor_ids = [i[0] for i in response] # Unpack results into list
     
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     return sensor_ids
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+
+def Get_next_regular_update(timezone):
+    '''
+    This function will query the "Sensor Type Information" table for the next time to run a regular update
+    
+    parameters:
+    
+    timezone = pytz timezone
+    
+    returns a timezone aware datetime
+    '''
+    
+    cmd = sql.SQL('''SELECT MIN(last_update + INTERVAL '1 Minutes' * update_frequency)
+FROM "Sensor Type Information";
+    ;''')
+    
+    response = psql.get_response(cmd)
+    
+    # Unpack response into datetime
+    
+    if response[0][0] != None:
+
+        next_regular_update = response[0][0].astimezone(pytz.timezone(timezone))
+    else:
+        print('ERROR: Cannot calculate the next regular update. Please see Database/Queries/Sensor.py')
+        
+    return next_regular_update
+    
