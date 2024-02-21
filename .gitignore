@@ -5,3 +5,4 @@
 *.cpython-310.pyc
 **/.ipynb_checkpoints/*
 *.copy
+Testing.ipynb
