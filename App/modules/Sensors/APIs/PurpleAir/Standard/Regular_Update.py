@@ -36,7 +36,6 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
     sensor_id - int - our unique identifier
     sensor_type - text - our sensor_type identifier
     api_id - text - identifier for api
-    last_elevated - text - the last time this sensor was elevated
     pollutant - text - abbreviated name for pollutant sensor reads
     metric - text - a unit to append to readings
     thresholds - list - list of 5 floats corresponding to health benchmarks
@@ -49,20 +48,19 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
-    update_frequency - int - frequency this sensor is updated
+    update_frequency - int - frequency this sensor is updated (in minutes)
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
     is_flagged - binary - is the sensor flagged?
-    last_elevated - text - the last time this sensor was elevated
     '''
     
     # Initialize storage
     
     sensors_df = pd.DataFrame(columns = ['sensor_id', 'current_reading', 'update_frequency',
                               'pollutant', 'metric', 'health_descriptor',
-                              'radius_meters', 'is_flagged', 'last_elevated']
+                              'radius_meters', 'is_flagged']
                              )
     
     # Iterate through sensors on the monitor

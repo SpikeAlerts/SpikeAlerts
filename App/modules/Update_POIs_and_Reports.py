@@ -13,18 +13,24 @@ from psycopg2 import sql
 
 ## Workflow
 
-def workflow(sensors_df, runtime, report_lag):
+def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, report_lag, epsg_code):
     '''
     Runs the full workflow to update our database tables "Places of Interest" and "Reports Archive". 
     This involves the following:
 
-    a) Check for newly alerted POIs
-    b) Update active_alerts and cached_alerts
+    Iterate through new/ended alerts in sensor_id_dict
+    
+    a) Update active_alerts for new alerts
+    b) Update active_alerts and cached_alerts for ended alerts
+    
+    Then 
+    
     c) Check for POIs with empty active_alerts and non-empty cached_alerts 
         where end_time of any alert_id in cached_alerts + report_lag < runtime
-    d) Write Reports & Clear cached_alerts for all in C
+        
+    d) if len(c) > 0: Write Reports & Clear cached_alerts for all in C
     
-    Alter sensor health thresholds to test
+    To Test: Alter sensor health thresholds with
     
     UPDATE "Sensor Type Information"
     SET thresholds = ARRAY[0, 12.1, 35.5, 55.5, 150.5, 250.5, 1000],
@@ -36,105 +42,223 @@ def workflow(sensors_df, runtime, report_lag):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
-    update_frequency - int - frequency this sensor is updated
+    update_frequency - int - frequency this sensor is updated (in minutes)
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
-    sensor_status - text - one of these categories: new_spike, ongoing_spike, ended_spike, unknown, or ordinary
+    is_flagged - binary - is the sensor flagged?
+    
+    sensor_id_dict - dictionary used to determine which steps to conduct. Has the following structure:
+    
+    {'TRUE' : {'new' : set of sensor_ids,
+                     'ongoing' : set of sensor_ids,
+                     'ended' : set of sensor_ids}
+      'FALSE' : {'new' : set of sensor_ids,
+                   'ongoing' : set of sensor_ids,
+                   'ended' : set of sensor_ids}
+      }
+                      
+         where TRUE = for sensitive populations
+                FALSE = for all populations
+                
+    ended_alert_ids - list of integers - this is a list of the alert_ids that just ended
     
     runtime - datetime - approximate time that the values for above dataframe were acquired
     
     report_lag - int - minutes to delay writing a report
     
-    returns 3 lists: poi_ids_to_alert, poi_ids_to_end_alert, new_reports (start_time, duration_minutes, severity, report_id)
+    epsg_code - string - epsg code for local UTM coordinate reference system (for distance calculations)
     '''
+    
+    # Initialize iterators
+    
+    alert_types = ['new', 'ended'] # 'new' or 'ended' alerts (don't update pois if ongoing alert)
+    sensitivities = ['FALSE', 'TRUE'] # Matches "sensitive" in database alert tables
+                                           # True = alert for sensitive pops, False = alert for all pops
 
-    # ~~~~~~~~~~~~~~~~
-    # a) New Alerts
     
-    poi_ids_to_alert = poi_query.Get_pois_to_alert()
+    # Initialize lists to return
     
-    # ~~~~~~~~~~~~~~~~
-    # b) Update active and cached alerts (probably should check to see that there are actually alerts to update)
+    # Iterate
     
-    Update_active_and_cached_alerts()
+    for alert_type in alert_types:
     
-    # ~~~~~~~~~~~~~~~~
-    # c) Check for POIs with empty active_alerts and non-empty cached_alerts
+        for is_sensitive in sensitivities:
     
-    poi_ids_to_end_alert = poi_query.Get_pois_to_end_alert(runtime, report_lag)
-    
-    # ~~~~~~~~~~~~~~~~
-    # d) Write Reports & clear cache for poi_ids_to_end_alert
-    
-    if len(poi_ids_to_end_alert) > 0:
-    
-        # Get reports_for_day
-    
-        reports_for_day = query.Get_reports_for_day(runtime)
-        
-        new_reports = [] # This is a list of tuples containing (start_time, duration_minutes, severity, report_id)
-    
-        for poi_id in poi_ids_to_end_alert:
-        
-            start_time, duration_minutes, severity, report_id = Initialize_report(poi_id, reports_for_day, runtime)
+            sensor_ids = sensor_id_dict[is_sensitive][alert_type]
             
-            new_reports += [(start_time, duration_minutes, severity, report_id)]
+            # ~~~~~~~~~~~~~~~~
+            # a) New Alerts
             
-            reports_for_day += 1 
+            if (alert_type == 'new') and (len(sensor_ids) > 0):
             
-        # Update reports for day
-        
-        Update_reports_for_day(runtime, reports_for_day)
-        
-        # Clear the cached alerts
-        
-        Clear_cached_alerts(poi_ids_to_end_alert)
-            
-    #print(poi_ids_to_alert, poi_ids_to_end_alert)
+                # Update the active_alerts
+                
+                Add_alerts_to_pois(list(sensor_ids), is_sensitive, epsg_code)
+                
+            # ~~~~~~~~~~~~~~~~
+            # b) Ended Alerts
+
+            if (alert_type == 'ended') and (len(sensor_ids) > 0):
+
+                # Update the cached_alerts
+                
+                Cache_alerts(is_sensitive, ended_alert_ids)
     
-    return poi_ids_to_alert, poi_ids_to_end_alert, new_reports
+    # ~~~~~~~~~~~~~~~~
+    # Finally, we will write reports
+    
+    reports_dict = {} # Initialize storage
+    
+    for is_sensitive in sensitivities:
+    
+        # c) Check for POIs with empty active_alerts and non-empty cached_alerts
+        
+        poi_ids_to_end_alert = poi_query.Get_pois_to_end_alert(runtime, report_lag, is_sensitive)
+        
+        # ~~~~~~~~~~~~~~~~
+        # d) Write Reports & clear cache for poi_ids_to_end_alert
+        
+        if len(poi_ids_to_end_alert) > 0:
+        
+            # Get reports_for_day
+        
+            reports_for_day = query.Get_reports_for_day(runtime)
+            
+            new_reports = [] # This is a list of tuples containing (start_time, duration_minutes, severity, report_id)
+        
+            for poi_id in poi_ids_to_end_alert:
+            
+                start_time, duration_minutes, report_id = Initialize_report(poi_id, reports_for_day, runtime, is_sensitive)
+                
+                new_reports += [(start_time, duration_minutes, is_sensitive, report_id)]
+                
+                reports_for_day += 1 
+                
+            # Update reports for day
+            
+            Update_reports_for_day(runtime, reports_for_day)
+            
+            # Clear the cached alerts
+            
+            Clear_cached_alerts(poi_ids_to_end_alert, is_sensitive)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Update_active_and_cached_alerts():
+# NEW ALERTS
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Add_alerts_to_pois(sensor_ids, is_sensitive, epsg_code):
     '''
-    This function will update the active and cached_alerts for the POIs
-    active = nearby_alerts for each poi
-    cached = previous_active - nearby_alerts
+    This function will update the active_alerts for the POIs
+    
+    parameters:
+    
+    sensor_ids - list of sensor_ids
+    is_sensitive - 'TRUE' or 'FALSE' corresponding to sensitive field in database alert tables 
+    epsg_code - string - epsg code for local UTM coordinate reference system (for distance calculations)
     '''
     
+    update_field = 'active_alerts'
+    
+    if is_sensitive == 'TRUE':
+        update_field += '_sensitive'
+    
     cmd = sql.SQL('''
-    WITH merged as
+    WITH alerts_to_update as
+	    (
+	    SELECT alert_id, radius_meters, geometry
+	    FROM alerts_w_info
+	    WHERE sensor_id = ANY ( {} )
+	    AND sensitive = {}
+	    ), pois_w_alert_ids AS
     (
-        SELECT p.poi_id,
-		       COALESCE(a.nearby_alerts, {}) as nearby_alerts, 
-		       p.active_alerts,
-		       p.cached_alerts
-        FROM "Places of Interest" p
-        LEFT JOIN pois_w_alert_ids a ON (a.poi_id = p.poi_id)
+	    SELECT p.poi_id, ARRAY_AGG(s.alert_id) as new_alerts
+	    FROM alerts_to_update s, "Places of Interest" p
+	    WHERE p.active = TRUE
+	    AND ST_DWithin(ST_Transform(p.geometry, {}), -- CHANGE THIS!!
+				       ST_Transform(s.geometry, {}), -- CHANGE THIS!!
+				       s.radius_meters)
+	    GROUP BY p.poi_id
     )
     UPDATE "Places of Interest" p
-    SET active_alerts = a.nearby_alerts,
-	    cached_alerts = ARRAY_CAT(a.cached_alerts, ARRAY_DIFF(a.active_alerts, a.nearby_alerts))
-    FROM merged a
+    SET {} = ARRAY_CAT(p.{}, a.new_alerts)
+    FROM pois_w_alert_ids a
     WHERE p.poi_id = a.poi_id
-    AND (ARRAY_LENGTH(a.nearby_alerts, 1) > 0
-    OR ARRAY_LENGTH(p.active_alerts, 1) > 0);
-    ''').format(sql.Literal('{}'))
+    ;
+    ''').format(sql.Literal(sensor_ids),
+                sql.Literal(is_sensitive),
+                sql.Literal(int(epsg_code)),
+                sql.Literal(int(epsg_code)),
+                sql.Identifier(update_field),
+                sql.Identifier(update_field))
     
     psql.send_update(cmd)
     
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
-# ~~~~~~~~~~~~~~ 
-def Initialize_report(poi_id, reports_for_day, runtime):
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Ended Alerts
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Cache_alerts(is_sensitive, ended_alert_ids):
+    '''
+    This function will update the cached_alerts for the POIs
+    
+    parameters:
+    
+    ended_alert_ids - list of integers - the alert_ids that just ended
+    '''
+    
+    active_field = 'active_alerts'
+    cache_field = 'cached_alerts'
+    
+    if is_sensitive == 'TRUE':
+        cache_field += '_sensitive'
+        active_field += '_sensitive'
+    
+    for alert_id in ended_alert_ids:
+    
+        cmd = sql.SQL('''
+        UPDATE "Places of Interest" p
+        SET {} = ARRAY_REMOVE(p.{}, {}),
+            {} = ARRAY_APPEND(p.{}, {})
+        WHERE {} = ANY ( p.{} )
+        ;
+        ''').format(sql.Identifier(active_field),
+                    sql.Identifier(active_field),
+                    sql.Literal(alert_id),
+                    sql.Identifier(cache_field),
+                    sql.Identifier(cache_field),
+                    sql.Literal(alert_id),
+                    sql.Literal(alert_id),
+                    sql.Identifier(active_field)
+                    )
+    
+        psql.send_update(cmd)
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Write Reports
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Initialize_report(poi_id, reports_for_day, runtime, is_sensitive):
     '''
     This function will initialize a unique report for a poi in the database.
 
     It will also return the start_time/duration_minutes/severity/report_id of the report
     '''
+    
+    active_field = 'active_alerts'
+    cache_field = 'cached_alerts'
+    
+    if is_sensitive == 'TRUE':
+        cache_field += '_sensitive'
+        active_field += '_sensitive'
     
     # Create Report_id
     
@@ -148,7 +272,7 @@ def Initialize_report(poi_id, reports_for_day, runtime):
     
     cmd = sql.SQL('''WITH poi_alert_cache as
 (
-	SELECT name, cached_alerts
+	SELECT name, {} as cached_alerts
 	FROM "Places of Interest"
 	WHERE poi_id = {} --inserted record_id
 ), alerts as
@@ -158,25 +282,27 @@ def Initialize_report(poi_id, reports_for_day, runtime):
 	FROM "Archived Alerts" p, poi_alert_cache c
 	WHERE p.alert_id = ANY (c.cached_alerts)
 )
-INSERT INTO "Reports Archive" (report_id, poi_name, start_time, duration_minutes, severity, alert_ids)
+INSERT INTO "Reports Archive" (report_id, poi_name, start_time, duration_minutes, sensitive, alert_ids)
 SELECT {}, -- Inserted report_id
         p.name,
         a.start_time, -- start_time
 		(((DATE_PART('day', a.time_diff) * 24) + 
     		DATE_PART('hour', a.time_diff)) * 60 + 
 		 	DATE_PART('minute', a.time_diff)) as duration_minutes,
-			'unhealthy', -- NOT DONE - the severity of the alert
+			{}, -- is this report for sensitive populations?
 		p.cached_alerts
 FROM poi_alert_cache p, alerts a; 
-''').format(sql.Literal(poi_id),
+''').format(sql.Identifier(cache_field),
+            sql.Literal(poi_id),
             sql.Literal(formatted_runtime),
-            sql.Literal(report_id))
+            sql.Literal(report_id),
+            sql.Literal(is_sensitive))
 
     psql.send_update(cmd)
 
     # Now get the information from that report
 
-    cmd = sql.SQL('''SELECT start_time, duration_minutes, severity
+    cmd = sql.SQL('''SELECT start_time, duration_minutes
              FROM "Reports Archive"
              WHERE report_id = {};
 ''').format(sql.Literal(report_id))
@@ -184,9 +310,9 @@ FROM poi_alert_cache p, alerts a;
     response = psql.get_response(cmd)
 
     # Unpack response
-    start_time, duration_minutes, severity = response[0]
+    start_time, duration_minutes = response[0]
 
-    return start_time, duration_minutes, severity, report_id    
+    return start_time, duration_minutes, report_id    
     
 # ~~~~~~~~~~~~~~~~
 
@@ -210,17 +336,23 @@ def Update_reports_for_day(runtime, reports_for_day):
 
 # 3) Transfer these alerts from "Sign Up Information" active_alerts to "Sign Up Information" cached_alerts
 
-def Clear_cached_alerts(poi_ids_to_end_alert):
+def Clear_cached_alerts(poi_ids_to_end_alert, is_sensitive):
     '''
     This function clears the cached_alerts in the poi_ids given
     '''
+    active_field = 'active_alerts'
+    cache_field = 'cached_alerts'
     
+    if is_sensitive == 'TRUE':
+        cache_field += '_sensitive'
+        active_field += '_sensitive'
     
     cmd = sql.SQL('''
     UPDATE "Places of Interest"
-    SET cached_alerts = {}
+    SET {} = {}
     WHERE poi_id = ANY ({});
-    ''').format(sql.Literal('{}'),
+    ''').format(sql.Identifier(cache_field),
+                sql.Literal('{}'),
                 sql.Literal(poi_ids_to_end_alert)
                )
     

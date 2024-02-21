@@ -33,12 +33,19 @@ def Get_pois_to_alert():
     
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_pois_to_end_alert(runtime, report_lag):
+def Get_pois_to_end_alert(runtime, report_lag, is_sensitive):
     '''
     This function will return a list of poi_ids from "Places of Interest" 
     that have empty active_alerts and non-empty cached_alerts
             where end_time of any alert in cache + report_lag < runtime 
     '''
+    
+    active_field = 'active_alerts'
+    cache_field = 'cached_alerts'
+    
+    if is_sensitive == 'TRUE':
+        cache_field += '_sensitive'
+        active_field += '_sensitive'
     
     formatted_runtime = runtime.strftime('%Y-%m-%d %H:%M:%S')
     
@@ -47,11 +54,11 @@ def Get_pois_to_end_alert(runtime, report_lag):
     -- Select the pois with empty active_alerts & non-empty cached_alerts
     WITH not_alerted_pois as
     (
-	    SELECT poi_id, cached_alerts
+	    SELECT poi_id, {} as cached_alerts
 	    FROM "Places of Interest" p
 	    WHERE active = True
-	    AND active_alerts = {}
-	    AND ARRAY_LENGTH(cached_alerts, 1) > 0
+	    AND {} = {}
+	    AND ARRAY_LENGTH({}, 1) > 0
     ), pois_w_endtimes as
     
     -- Get max endtime of all alerts in cache for each poi
@@ -66,7 +73,10 @@ def Get_pois_to_end_alert(runtime, report_lag):
     SELECT poi_id
     FROM pois_w_endtimes
     WHERE endtime +  INTERVAL '1 Minutes' * {} <= {};
-    ''').format(sql.Literal('{}'),
+    ''').format(sql.Identifier(cache_field),
+                sql.Identifier(active_field),
+                sql.Literal('{}'),
+                sql.Identifier(cache_field),
                 sql.Literal(report_lag),
                 sql.Literal(formatted_runtime))
                 

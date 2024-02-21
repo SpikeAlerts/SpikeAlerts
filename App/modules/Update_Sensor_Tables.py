@@ -27,7 +27,6 @@ def workflow(sensors_df, sensor_types_updated, runtime):
     Runs the full workflow to update our database table "Sensors" with the following:
 
     channel_flag - if flagged
-    last_elevated - if new/ongoing spikes
     last_seen - if not flagged
     current_reading - for all
     
@@ -39,13 +38,12 @@ def workflow(sensors_df, sensor_types_updated, runtime):
 
     sensor_id - int - our unique identifier
     current_reading - float - the raw sensor value
-    update_frequency - int - frequency this sensor is updated
+    update_frequency - int - frequency this sensor is updated (in minutes)
     pollutant - str - abbreviated name of pollutant sensor reads
     metric - str - unit to append to readings
     health_descriptor - str - current_reading related to current health benchmarks
     radius_meters - int - max distance sensor is relevant
     is_flagged - binary - is the sensor flagged?
-    sensor_status - text - one of these categories: ordinary, new_spike, ongoing_spike, ended_spike
     
     sensor_types_updated - iterable of sensor_types that were updated
     
@@ -57,14 +55,6 @@ def workflow(sensors_df, sensor_types_updated, runtime):
 
     flagged_ids = sensors_df[sensors_df.is_flagged == True].sensor_id.to_list()
     flag_sensors(flagged_ids)
-    
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # last_elevated - if new/ongoing spikes
-
-    elevated_ids = sensors_df[(sensors_df.sensor_status == 'new_spike') |
-                              (sensors_df.sensor_status == 'ongoing_spike')
-                             ].sensor_id.to_list()
-    Update_last_elevated(elevated_ids, runtime)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # last_seen - if not flagged
@@ -98,28 +88,6 @@ def flag_sensors(sensor_ids):
         WHERE sensor_id = ANY ( {} );
         ''').format(sql.Literal(sensor_ids))
     
-        psql.send_update(cmd)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    
-### Function to update all last_elevateds
-
-def Update_last_elevated(sensor_ids, runtime):
-    '''
-    This function updates all the sensors' last_elevated that are currently spiked
-    '''
-
-    if len(sensor_ids) > 0:
-    
-        update_time = runtime.strftime('%Y-%m-%d %H:%M:%S')
-        
-        cmd = sql.SQL('''UPDATE "Sensors"
-        SET last_elevated = {}
-        WHERE sensor_id = ANY ( {} );
-        '''
-        ).format(sql.Literal(update_time),
-                sql.Literal(sensor_ids))
-                
         psql.send_update(cmd)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`

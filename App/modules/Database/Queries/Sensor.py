@@ -113,7 +113,6 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_types='All', channel_flags=[0,1
 	name varchar(100), -- A name for the sensor (for humans)
 	date_created timestamp DEFAULT CURRENT_TIMESTAMP,
 	last_seen timestamp DEFAULT CURRENT_TIMESTAMP,
-	last_elevated timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:00',
 	channel_state int, -- Indicates whether the sensor is active or not
 	channel_flags int, -- Indicates whether sensor is depricated
 	altitude int,
@@ -131,7 +130,7 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_types='All', channel_flags=[0,1
     sensors_df = pd.DataFrame()
     
     field_options = ['sensor_id', 'sensor_type', 'api_id', 'name',
-                     'date_created', 'last_seen', 'last_elevated',
+                     'date_created', 'last_seen',
                      'channel_state', 'channel_flags', 'altitude', 'last_value'
                      ]
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                 
@@ -191,7 +190,7 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_types='All', channel_flags=[0,1
         
             # Datetimes
             
-            datetime_cols = {'last_seen', 'date_created', 'last_elevated'}
+            datetime_cols = {'last_seen', 'date_created'}
             
             for col in set(fields).intersection(datetime_cols):
             
@@ -212,38 +211,6 @@ def Get_Sensor_Info(fields=['sensor_id'], sensor_types='All', channel_flags=[0,1
         sensors_df = df.copy()
     
     return sensors_df
-    
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-def Get_not_elevated_sensors(runtime, alert_lag = 0):
-    '''
-    Gets the sensor types from "Sensor Type Information" that are ready for a regular update
-     
-    runtime is a datetime object
-    alert_lag is the number of minutes to wait until ending an alert
-    
-    returns a list of sensor_ids
-    '''
-    
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-    
-    update_time = runtime.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Make command
-    
-    cmd = sql.SQL('''
-    SELECT sensor_id 
-    FROM "Sensors"
-    WHERE last_elevated + INTERVAL '1 Minutes' * {} <= {};''').format(sql.Literal(alert_lag),
-                                                          sql.Literal(update_time))
-
-    response = psql.get_response(cmd)
-
-    # Unpack response into list
-
-    sensor_ids = [i[0] for i in response] # Unpack results into list
-    
-    return sensor_ids
     
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -270,7 +237,7 @@ FROM "Sensor Type Information";
 
         next_regular_update = response[0][0].astimezone(pytz.timezone(timezone))
     else:
-        print('ERROR: Cannot calculate the next regular update. Please see Database/Queries/Sensor.py')
+        print('ERROR: Cannot calculate the next regular update. Please see modules/Database/Queries/Sensor.py')
         
     return next_regular_update
     

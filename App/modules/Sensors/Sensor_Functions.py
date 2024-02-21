@@ -75,7 +75,6 @@ def Update_Sensors(correct_df):
 	name - str
 	date_created - str - datetime.strftime('%Y-%m-%d %H:%M:%S')
 	last_seen - str - datetime.strftime('%Y-%m-%d %H:%M:%S')
-	last_elevated - str - datetime.strftime('%Y-%m-%d %H:%M:%S')
     channel_state - pd.series.astype("Int64")
     channel_flags - pd.series.astype("Int64")
 	altitude - pd.series.astype("Int64")

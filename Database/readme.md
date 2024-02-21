@@ -156,13 +156,11 @@ Use any geometry (Points, Multipoints, Lines, Polygons)
 INSERT INTO base."Places of Interest" 
 	(
 	name, -- varchar(100), -- A name for the POI. Can be null.
-	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	geometry -- Can be any geometry
 	)
 VALUES 
 	(
 	'Smith Foundry Point',
-	TRUE,
 	ST_SetSRID(ST_MakePoint(-93.24553722585783, 44.95170035308462), 4326)
 	);
 ```
@@ -173,13 +171,11 @@ VALUES
 INSERT INTO base."Places of Interest" 
 	(
 	name, -- varchar(100), -- A name for the POI. Can be null.
-	sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	geometry -- Can be any geometry
 	)
 VALUES 
 	(
 	'Point NW of Hennepin Energy Recovery Center',
-	TRUE,
 	ST_SetSRID(ST_MakePoint(-93.28983454197842, 44.99135801605877), 4326)
 	);
 ```
@@ -201,10 +197,9 @@ SELECT ST_MakePolygon( ST_AddPoint(foo.open_line, ST_StartPoint(foo.open_line)) 
 INSERT INTO base."Places of Interest" 
 (
 name, -- varchar(100), -- A name for the POI. Can be null.
-sensitive, -- boolean DEFAULT FALSE -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 geometry -- Can be any geometry
 )
 SELECT
-'Area NW of Smith Foundry', TRUE, poly 
+'Area NW of Smith Foundry', poly 
 FROM geom;
 ```

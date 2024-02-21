@@ -9,22 +9,25 @@ from modules.Database import Basic_PSQL as psql
 
 # ~~~~~~~~~~~~~~~~~~
     
-def Get_alerted_sensor_ids():
+def Get_alerted_sensor_ids(sensitive, sensor_id_filter = []):
     '''
     Get sensor_ids for sensors with an active alert from database
-    where sensor_id in all_sensor_ids
+    where sensitive = sensitive
+    AND sensor_id is any of the sensor_ids in sensor_id_filter (an
     Returns a list
     '''
     
     cmd = sql.SQL('''SELECT sensor_id 
-    FROM "Active Alerts";
-    ''')
+    FROM "Active Alerts"
+    WHERE sensitive = {}
+    AND sensor_id = ANY ( {} );
+    ''').format(sql.Literal(sensitive),
+                sql.Literal(sensor_id_filter))
     
     response = psql.get_response(cmd)   
-    # Convert response into dataframe
+    # Convert response into list
     
     sensor_ids = [i[0] for i in response] # Unpack results into list
-
     
     return sensor_ids
  

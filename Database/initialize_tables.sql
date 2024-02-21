@@ -64,7 +64,6 @@ CREATE TABLE "Sensors" -- Storage for all sensors
 	name varchar(100), -- A name for the sensor (for humans)
 	date_created timestamp DEFAULT CURRENT_TIMESTAMP,
 	last_seen timestamp DEFAULT CURRENT_TIMESTAMP,
-	last_elevated timestamp DEFAULT TIMESTAMP '2000-01-01 00:00:01',
 	channel_state int DEFAULT 1, -- Indicates whether the sensor is active (1) or not (0),
 	channel_flags int DEFAULT 0, -- Indicates whether sensor is depricated, 0 = not degraded, 1 = channel a degraded, 2 = channel b degraded, 3 = degraded, 4 = newly flagged
 	altitude int,
@@ -100,9 +99,10 @@ CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
 	name varchar(100), -- A name for the POI. Can be null for privacy
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
-	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids
+    active_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids (for sensitive populations)
+	cached_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
+	active_alerts bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids (for all populations)
 	cached_alerts bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
-	sensitive boolean DEFAULT FALSE, -- Should warnings be issued when sensors read "unhealthy for sensitive groups"
 	active boolean DEFAULT TRUE -- Are we monitoring this point?
 	);
 
@@ -113,7 +113,7 @@ CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each
 	poi_name varchar(100), -- A name to attach to the POI. Can be null for privacy
 	start_time timestamp,
 	duration_minutes integer,
-	severity text, -- One of these categories: good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous
+	sensitive boolean, -- Indicates whether this is a report only for sensitive groups
 	alert_ids bigint [] -- List of alert_ids
     );
     
@@ -170,7 +170,7 @@ INNER JOIN base."Sensors" s ON (a.sensor_id = s.sensor_id)
 );
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Alerts, Sensors, and Sensor Type Information merged
+-- Active Alerts, Sensors, and Sensor Type Information merged
 
 CREATE VIEW base.alerts_w_info AS
 (
@@ -181,21 +181,7 @@ SELECT s.sensor_id, s.name, s.alert_id, s.sensitive, s.start_time, s.last_seen,
 FROM base.alerted_sensors s
 INNER JOIN base.sensor_ids_w_info i ON (s.sensor_id = i.sensor_id)
 );
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Alert_ids aggregated to nearby POI_ids
-
-CREATE VIEW base.pois_w_alert_ids AS
-(
-SELECT p.poi_id, ARRAY_AGG(s.alert_id) as nearby_alerts
-FROM base."Places of Interest" p, base.alerts_w_info s
-WHERE p.sensitive = s.sensitive
-AND p.active = TRUE
-AND ST_DWithin(ST_Transform(p.geometry, 26915), -- CHANGE THIS!!
-			   ST_Transform(s.geometry, 26915), -- CHANGE THIS!!
-			   s.radius_meters)
-GROUP BY p.poi_id
-);
+ 
  
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
