@@ -14,6 +14,10 @@ The program queries the PurpleAir API every 10 minutes (soon we'll have more sen
 
 When all alerts end for a user, an end of spike alert message is sent to the subscriber, detailing the length and severity of the event, and a unique reporting option through REDCap. Alerts are archived for future reference (this does not include the user's location/phone number).
 
+## How to Contribute?
+
+We welcome collaboration! Please check out [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Foundational Developers
 
 Rob Hendrickson
