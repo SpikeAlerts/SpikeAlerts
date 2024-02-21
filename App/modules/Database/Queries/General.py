@@ -74,7 +74,7 @@ WHERE date = DATE('{formatted_runtime}');
     
     response = psql.get_response(cmd)
 
-    # Unpack response into timezone aware datetime
+    # Unpack response
     
     if response[0][0] != None:
 

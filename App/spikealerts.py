@@ -71,7 +71,7 @@ starttime = dt.datetime.now(pytz.timezone(base_config['TIMEZONE']))
 stoptime = starttime + dt.timedelta(days=days_to_run)
 
 # next_system_update = The next time for a daily update (new sensors/POIs)    
-next_system_update = starttime.replace(hour=8, minute = 0, second = 0) # 8am today
+next_system_update = starttime.replace(hour=0, minute = 0, second = 0) # 12am today
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
