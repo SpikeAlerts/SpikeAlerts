@@ -56,7 +56,11 @@ python App/spikealerts.py # Run the App
 
 ### 5) Check out the database
 
-You should be able to see the "Sensors", "Active Alerts", "Archived Alerts", "Places of Interest" tables updating. 
+You should be able to see the "Sensors", "Active Alerts", "Archived Alerts", "Places of Interest" tables updating.
+
+## How to Contribute?
+
+We welcome collaboration! Please check out [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Foundational Developers
 
