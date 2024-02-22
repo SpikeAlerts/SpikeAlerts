@@ -3,31 +3,58 @@ This function is the workflow of one regular update
 
 # It Sequentially calls many other workflows within the same directory
 
-# 0 = Daily Updates - Less regular System-wide updates for Sensors and POIs
+# 0 = Daily_Updates - Less regular System-wide updates for Sensors, Users, POIs
+
 # 1 = Call_APIs - Gets real-time sensors' information
                         Returns a pd.dataframe of this called sensors_df
+                        
+sensors_df fields are used to inform the next 2 steps:
+                        
 # 2 = Update_Sensor_Tables - Update last_seen, channel_flags, and values in "Sensors" and last_update in "Sensor Type Information"
 
- sensors_df fields are used to inform the next steps:
-
 # 3 = Update_Alerts_Tables - Create new alerts, update ongoing alerts, and end old alerts
+
+                            Returns a dictionary of the sensor_ids with the following structure:
+                            
+                            sensor_id_dict = 
+                              {'TRUE' : {'new' : set of sensor_ids,
+                                             'ongoing' : set of sensor_ids,
+                                             'ended' : set of sensor_ids}
+                              'FALSE' : {'new' : set of sensor_ids,
+                                           'ongoing' : set of sensor_ids,
+                                           'ended' : set of sensor_ids}
+                              }
+                                              
+                                 where TRUE = for sensitive populations
+                                        FALSE = for all populations
+
+sensor_id_dict is used to inform the next step:
  
 # 4 = Update_POIs_and_Reports - Updates the POI & reports tables
 
-At the end there are 2 lists of poi_ids (Places of Interest IDs)
-
-poi_ids_to_alert (POIs with new AQ event)
-and 
-poi_ids_to_end_alert (POIs with a new report written "end of event")     
-
-And one list of (start_time, duration_minutes, severity, report_id)
-                     with the same index as poi_ids_to_end_alert  
+                    This returns a dictionary with the following format:
+                    
+                              poi_id_dict = 
+                              {'TRUE' : {'new' : list of poi_ids,
+                                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
+                              'FALSE' : {'new' : list of poi_ids,
+                                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
+                              }
+                                              
+                                 where TRUE = for sensitive populations
+                                        FALSE = for all populations   
+                                        
+poi_id_dict is used to inform the next step:
                      
-# 5 = Send Alerts - NOT DONE
+# 5 = Update_Users_and_Compose_Messages - NOT DONE - Updates the Users table and composes messages.
 
-# 6 = Periodically send reports to manager/orgs & Archive Database - NOT DONE
+                        returns a list of tuples (contact_method, api_id, message) called messsage_info
 
-# 7 = Calculate next update time
+# 6 = Send_Notifications - NOT DONE - send the above messsages
+
+# 7 = Send_Reports_and_Archive - NOT DONE - Periodically send reports to manager/orgs & archive the alerts and reports to another database
+
+# 8 = Calculate next update time
 '''
 
 # Import the modules listed above
@@ -37,7 +64,10 @@ from modules import Call_APIs # 1
 from modules import Update_Sensor_Tables # 2
 from modules import Update_Alert_Tables # 3
 from modules import Update_POIs_and_Reports # 4
-from modules.Database.Queries import Sensor as sensor_query # 7
+#from modules import Update_Users_and_Compose_Messages # 5
+#from modules import Send_Notifications # 6
+#from modules import Send_Reports_and_Archive # 7
+from modules.Database.Queries import Sensor as sensor_query # 8
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,7 +108,14 @@ def main(base_config, runtime, next_system_update):
 
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
-        Update_POIs_and_Reports.workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config['REPORT_LAG'], base_config['EPSG_CODE'])
+        poi_id_dict = Update_POIs_and_Reports.workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config['REPORT_LAG'], base_config['EPSG_CODE'])
+        
+        print(poi_id_dict)
+        # ~~~~~~~~~~~~~~~~~~~~~
+
+        # 5) Workflow for updating our database table "Users" and Compose messages to send
+
+        #message_info = Update_Users_and_Compose_Messages.workflow(poi_id_dict)
         
     # 7) Get the next regular update time
         
