@@ -11,19 +11,49 @@ from modules.Database import Basic_PSQL as psql
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_pois_to_alert():
+def Get_newly_alerted_pois(sensor_ids, is_sensitive, epsg_code):
     '''
-    This function will return a list of poi_ids from "Places of Interest" that are within the distance from an active alert, active, and have empty active and cached alerts
+    This function will return a list of poi_ids from "Places of Interest" 
+    that are within the distance from an active alert, active, and have empty active and cached alerts
     '''
     
+    active_field = 'active_alerts'
+    cache_field = 'cached_alerts'
+    
+    if is_sensitive == 'TRUE':
+        cache_field += '_sensitive'
+        active_field += '_sensitive'
+    
     cmd = sql.SQL('''
-    SELECT a.poi_id
-    FROM pois_w_alert_ids a
-    INNER JOIN "Places of Interest" p ON (a.poi_id = p.poi_id)
-    WHERE p.active_alerts = {}
-    AND p.cached_alerts = {};
-    ''').format(sql.Literal('{}'),
-                sql.Literal('{}'))
+    WITH unalerted_pois as
+    (
+	    SELECT poi_id, geometry
+	    FROM "Places of Interest"
+	    WHERE {} = {}
+	    AND {} = {}
+	    AND active = TRUE
+    ), alerted_sensors as
+    (
+	    SELECT radius_meters, geometry
+	    FROM alerts_w_info
+	    WHERE sensitive = {}
+	    AND sensor_id = ANY ( {} )
+    )
+    SELECT poi_id 
+    FROM unalerted_pois p
+    INNER JOIN alerted_sensors s 
+    ON (ST_DWithin(ST_Transform(p.geometry, {}),
+				           ST_Transform(s.geometry, {}),
+				           s.radius_meters))
+    GROUP BY poi_id
+    ;
+    ''').format(sql.Identifier(active_field), sql.Literal('{}'),
+                sql.Identifier(cache_field), sql.Literal('{}'),
+                sql.Literal(is_sensitive),
+                sql.Literal(sensor_ids),
+                sql.Literal(int(epsg_code)),
+                sql.Literal(int(epsg_code))
+                )
                 
     response = psql.get_response(cmd)
     
