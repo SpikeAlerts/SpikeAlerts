@@ -98,7 +98,7 @@ def update_table(correct_df, tablename, unique_identifier):
                                              sql.Literal(row[col]))
 
         cmd += sql.SQL(' WHERE {} = {};').format(sql.Identifier(unique_identifier),
-                                                 sql.Literal(row.sensor_id))
+                                                 sql.Literal(row[unique_identifer]))
 
         # Execute command
         cur.execute(cmd)
