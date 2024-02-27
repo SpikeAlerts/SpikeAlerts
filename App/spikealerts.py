@@ -20,7 +20,7 @@
 # File Manipulation
 
 import os # For working with Operating System
-from dotenv import dotenv_values # Loading .env info
+from dotenv import load_dotenv # Loading .env info
 # Add App to system path
 
 import sys
@@ -48,18 +48,18 @@ from modules.MAIN import main # The Main Loop
 
 ### Load Configuration (.env)
 
-base_config = {
-    **dotenv_values('.env.secret') # Load .env file # environment variables upacked into dicionary
-}
+load_dotenv('.env.secret')
 
- # Remove the database credentials from above
-keys_to_drop = [key for key in base_config if 'DB' in key]
-for key in keys_to_drop:
-    base_config.pop(key)
+base_config = {} # A dictionary to store the configuration variables
+
+# environment variables unpacked into dicionary
+base_config_keys = ['DAYS_TO_RUN', 'TIMEZONE', 'REPORT_LAG', 'EPSG_CODE', 'USERS', 'POI_FORM', 'REPORT_FORM']
+for key in base_config_keys:
+    base_config[key] = os.getenv(key)
 
 # Print Config
 print('Base Configuration:\n')
-pprint(base_config) 
+pprint(base_config)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
