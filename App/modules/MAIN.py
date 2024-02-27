@@ -45,6 +45,8 @@ sensor_id_dict is used to inform the next step:
                                         FALSE = for all populations   
                                         
 poi_id_dict is used to inform the next step:
+
+If the environment variable 'USERS' is set to 'y' then we will do steps 5-6
                      
 # 5 = Update_Users_and_Compose_Messages - NOT DONE - Updates the Users table and composes messages.
 
@@ -108,16 +110,30 @@ def main(base_config, runtime, next_system_update):
 
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
-        poi_id_dict = Update_POIs_and_Reports.workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config['REPORT_LAG'], base_config['EPSG_CODE'])
+        poi_id_dict = Update_POIs_and_Reports.workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config)
         
         print(poi_id_dict)
-        # ~~~~~~~~~~~~~~~~~~~~~
-
-        # 5) Workflow for updating our database table "Users" and Compose messages to send
-
-        #message_info = Update_Users_and_Compose_Messages.workflow(poi_id_dict)
         
-    # 7) Get the next regular update time
+        if base_config['USERS'] == 'y':
+        
+            pass
+            # ~~~~~~~~~~~~~~~~~~~~~
+
+            # 5) Workflow for updating our database table "Users" and Compose messages to send
+
+            #message_info = Update_Users_and_Compose_Messages.workflow(poi_id_dict)
+            
+            # ~~~~~~~~~~~~~~~~~~~~
+            
+            # 6) Workflow to send messages
+            
+    # ~~~~~~~~~~~~~~~~~~~~
+       
+    # 7) If it's time, send reports to manager/orgs and archive data somewhere
+    
+    # ~~~~~~~~~~~~~~~~~~~~
+       
+    # 8) Get the next regular update time
         
     next_regular_update = sensor_query.Get_next_regular_update(base_config['TIMEZONE'])
 

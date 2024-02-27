@@ -13,7 +13,7 @@ from psycopg2 import sql
 
 ## Workflow
 
-def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, report_lag, epsg_code):
+def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
     '''
     Runs the full workflow to update our database tables "Places of Interest" and "Reports Archive". 
     This involves the following:
@@ -66,9 +66,7 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, report_lag, e
     
     runtime - datetime - approximate time that the values for above dataframe were acquired
     
-    report_lag - int - minutes to delay writing a report
-    
-    epsg_code - string - epsg code for local UTM coordinate reference system (for distance calculations)
+    base_config - dictionary - environment variables
     
     returns a dictionary (poi_id_dict) with the following format:
      
@@ -81,6 +79,14 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, report_lag, e
                  where TRUE = for sensitive populations
                         FALSE = for all populations   
     '''
+    
+    # Unpack important variables from base_config
+    
+    # report_lag - int - minutes to delay writing a report
+    
+    # epsg_code - string - epsg code for local UTM coordinate reference system (for distance calculations)
+    
+    report_lag, epsg_code = base_config['REPORT_LAG'], base_config['EPSG_CODE']
     
     # Initialize dictionary to return
     
@@ -113,7 +119,9 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, report_lag, e
             
                 # Get poi_ids to send a new alert
                 
-                poi_id_dict[is_sensitive]['new'] = poi_query.Get_newly_alerted_pois(list(sensor_ids), is_sensitive, epsg_code)
+                if base_config['USERS'] = 'y': # We only need to do this semi-intensive query if we have users
+                
+                    poi_id_dict[is_sensitive]['new'] = poi_query.Get_newly_alerted_pois(list(sensor_ids), is_sensitive, epsg_code)
             
                 # Update the active_alerts
                 
