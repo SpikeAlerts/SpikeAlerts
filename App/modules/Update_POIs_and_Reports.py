@@ -119,7 +119,7 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
             
                 # Get poi_ids to send a new alert
                 
-                if base_config['USERS'] = 'y': # We only need to do this semi-intensive query if we have users
+                if base_config['USERS'] == 'y': # We only need to do this semi-intensive query if we have users
                 
                     poi_id_dict[is_sensitive]['new'] = poi_query.Get_newly_alerted_pois(list(sensor_ids), is_sensitive, epsg_code)
             
