@@ -203,3 +203,25 @@ SELECT
 'Area NW of Smith Foundry', poly 
 FROM geom;
 ```
+---
+---
+# Extension (Users)
+
+If you want to have folks sign up for the alerts we'll have to add one more table.
+
+## SQL:
+```
+CREATE TABLE base."Users" -- Storage for all sensors
+(
+	user_id serial PRIMARY KEY, -- Our Unique Identifier
+	poi_id int REFERENCES base."Places of Interest" (poi_id), -- Aligns with a POI in the database, might change to an array one day
+	alerted boolean DEFAULT FALSE, -- Is the user currently alerted?
+	contact_method text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Messaging/{contact_method}.py
+	api_id text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
+	sensitive boolean, -- True = send alerts when "Unhealthy for sensitive populations"
+	days_to_contact int [] DEFAULT array[0,1,2,3,4,5,6]::int[], -- 0 = Monday, 6 = Sunday
+	start_time time, -- The earliest time to send the user a message
+	end_time time, -- The latest time to send the user a message
+	active boolean DEFAULT TRUE -- Is the user currently active?
+);
+```
