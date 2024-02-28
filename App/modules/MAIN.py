@@ -83,7 +83,7 @@ def main(base_config, runtime, next_system_update):
     
     # ~~~~~~~~~~~~~~~~~~~~~
     
-    # 0) System Update? - Only sensors right now
+    # 0) System Update? - Only sensors/POIs right now
     
     if runtime > next_system_update:
         #pass
