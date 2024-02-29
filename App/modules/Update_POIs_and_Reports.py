@@ -13,7 +13,7 @@ from psycopg2 import sql
 
 ## Workflow
 
-def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
+def workflow(sensor_id_dict, ended_alert_ids, runtime, base_config):
     '''
     Runs the full workflow to update our database tables "Places of Interest" and "Reports Archive". 
     This involves the following:
@@ -38,17 +38,6 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
     
     Parameters:
     
-    sensors_df - a dataframe with the following columns:
-
-    sensor_id - int - our unique identifier
-    current_reading - float - the raw sensor value
-    update_frequency - int - frequency this sensor is updated (in minutes)
-    pollutant - str - abbreviated name of pollutant sensor reads
-    metric - str - unit to append to readings
-    health_descriptor - str - current_reading related to current health benchmarks
-    radius_meters - int - max distance sensor is relevant
-    is_flagged - binary - is the sensor flagged?
-    
     sensor_id_dict - dictionary used to determine which steps to conduct. Has the following structure:
     
     {'TRUE' : {'new' : set of sensor_ids,
@@ -68,12 +57,11 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
     
     base_config - dictionary - environment variables
     
-    returns a dictionary (poi_id_dict) with the following format:
+    returns a dictionary (reports_dict) with the following format:
      
-              {'TRUE' : {'new' : list of poi_ids,
-                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
-              'FALSE' : {'new' : list of poi_ids,
-                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
+              {
+              'TRUE' : list of tuples of (poi_id, report_id)
+              'FALSE' : list of tuples of (poi_id, report_id)
               }
                               
                  where TRUE = for sensitive populations
@@ -90,12 +78,9 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
     
     # Initialize dictionary to return
     
-    poi_id_dict = {'TRUE':{'new': [],
-                           'ended': []
-                            },
-                     'FALSE':{'new': [],
-                              'ended': []
-                            }
+    reports_dict = {
+                    'TRUE': [],
+                    'FALSE': []
                     }
                     
     # Initialize iterators
@@ -117,12 +102,6 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
             
             if (alert_type == 'new') and (len(sensor_ids) > 0):
             
-                # Get poi_ids to send a new alert
-                
-                if base_config['USERS'] == 'y': # We only need to do this semi-intensive query if we have users
-                
-                    poi_id_dict[is_sensitive]['new'] = poi_query.Get_newly_alerted_pois(list(sensor_ids), is_sensitive, epsg_code)
-            
                 # Update the active_alerts
                 
                 Add_alerts_to_pois(list(sensor_ids), is_sensitive, epsg_code)
@@ -139,11 +118,10 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
     # ~~~~~~~~~~~~~~~~
     # Finally, we will write reports
     
-    reports_dict = {} # Initialize storage
-    
     for is_sensitive in sensitivities:
     
-        # c) Check for POIs with empty active_alerts and non-empty cached_alerts
+        # c) Check for POIs with empty active_alerts and non-empty cached_alerts 
+        # that haven't been alerted for report_lag minutes
         
         poi_ids_to_end_alert = poi_query.Get_pois_to_end_alert(runtime, report_lag, is_sensitive)
         
@@ -156,17 +134,17 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
         
             reports_for_day = query.Get_reports_for_day(runtime)
             
-            new_reports = [] # This is a list of tuples containing (start_time, duration_minutes, severity, report_id)
+            new_reports = [] # This is a list of tuples containing (poi_id, report_id)
         
             for poi_id in poi_ids_to_end_alert:
             
-                start_time, duration_minutes, report_id = Initialize_report(poi_id, reports_for_day, runtime, is_sensitive)
+                report_id = Initialize_report(poi_id, reports_for_day, runtime, is_sensitive)
                 
-                new_reports += [(poi_id, duration_minutes, report_id)]
+                new_reports += [(poi_id, report_id)]
                 
                 reports_for_day += 1 
                 
-            poi_id_dict[is_sensitive]['ended'] = new_reports # Save for notifications
+            reports_dict[is_sensitive] = new_reports # Save for notifications
                 
             # Update reports for day
             
@@ -176,7 +154,7 @@ def workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config):
             
             Clear_cached_alerts(poi_ids_to_end_alert, is_sensitive)
             
-    return poi_id_dict
+    return reports_dict
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -284,7 +262,7 @@ def Initialize_report(poi_id, reports_for_day, runtime, is_sensitive):
     '''
     This function will initialize a unique report for a poi in the database.
 
-    It will also return the start_time/duration_minutes/severity/report_id of the report
+    It will also return the report_id of the report
     '''
     
     active_field = 'active_alerts'
@@ -334,19 +312,7 @@ FROM poi_alert_cache p, alerts a;
 
     psql.send_update(cmd)
 
-    # Now get the information from that report
-
-    cmd = sql.SQL('''SELECT start_time, duration_minutes
-             FROM "Reports Archive"
-             WHERE report_id = {};
-''').format(sql.Literal(report_id))
-
-    response = psql.get_response(cmd)
-
-    # Unpack response
-    start_time, duration_minutes = response[0]
-
-    return start_time, duration_minutes, report_id    
+    return report_id    
     
 # ~~~~~~~~~~~~~~~~
 

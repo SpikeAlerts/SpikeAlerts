@@ -34,17 +34,16 @@ sensor_id_dict is used to inform the next step:
 
                     This returns a dictionary with the following format:
                     
-                              poi_id_dict = 
-                              {'TRUE' : {'new' : list of poi_ids,
-                                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
-                              'FALSE' : {'new' : list of poi_ids,
-                                         'ended' : list of tuples of (poi_id, duration_minutes, report_id)}
+                            reports_dict =
+                              {
+                              'TRUE' : list of tuples of (poi_id, report_id)
+                              'FALSE' : list of tuples of (poi_id, report_id)
                               }
                                               
                                  where TRUE = for sensitive populations
                                         FALSE = for all populations   
                                         
-poi_id_dict is used to inform the next step:
+reports_dict is used to inform the next step:
 
 If the environment variable 'USERS' is set to 'y' then we will do steps 5-6
                      
@@ -105,9 +104,9 @@ def main(base_config, runtime, next_system_update):
 
         # 4) Workflow for updating our database tables "Places of Interest" and "Reports Archive"
 
-        poi_id_dict = Update_POIs_and_Reports.workflow(sensors_df, sensor_id_dict, ended_alert_ids, runtime, base_config)
+        reports_dict = Update_POIs_and_Reports.workflow(sensor_id_dict, ended_alert_ids, runtime, base_config)
         
-        print(poi_id_dict)
+        print(reports_dict)
         
         if base_config['USERS'] == 'y':
         
@@ -115,7 +114,7 @@ def main(base_config, runtime, next_system_update):
 
             # 5) Workflow for updating our database table "Users," Compose, and send messages
 
-            Notify_and_Update_Users.workflow(poi_id_dict, base_config)
+            Notify_and_Update_Users.workflow(reports_dict, base_config)
             
     # ~~~~~~~~~~~~~~~~~~~~
        
