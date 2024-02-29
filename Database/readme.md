@@ -218,7 +218,7 @@ CREATE TABLE base."Users" -- Storage for all sensors
 	poi_id int REFERENCES base."Places of Interest" (poi_id), -- Aligns with a POI in the database, might change to an array one day
 	alerted boolean DEFAULT FALSE, -- Is the user currently alerted?
 	last_contact timestamp DEFAULT TIMESTAMP'2000-01-01 00:00:00', -- When have we last messaged this person?
-	contact_method text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Messaging/{contact_method}.py
+	contact_method text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Contact_Methods/{contact_method}.py
 	api_id text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
 	sensitive boolean, -- True = send alerts when "Unhealthy for sensitive populations"
 	days_to_contact int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
@@ -234,7 +234,7 @@ CREATE TABLE base."Users" -- Storage for all sensors
 INSERT INTO base."Users"
 (
 	poi_id, -- int REFERENCES base."Places of Interest" (poi_id), -- Aligns with a POI in the database, might change to an array one day
-	contact_method, -- text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Messaging/{contact_method}.py
+	contact_method, -- text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Contact_Methods/{contact_method}.py
 	api_id, -- text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
 	sensitive, -- boolean, -- True = send alerts when "Unhealthy for sensitive populations"
 	days_to_contact, -- int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
@@ -244,7 +244,7 @@ INSERT INTO base."Users"
 VALUES
 (
 	123, -- Smith/Bituminous
-	'Twilio', -- Folder 
+	'Twilio', -- Contact Method Script name in App/modules/Users/Contact_Methods
 	1, -- REDCap record_id
 	TRUE, -- Is sensitive
 	ARRAY[1,2,3,4,5,6,7]::int[], -- Anyday

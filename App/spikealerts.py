@@ -53,7 +53,7 @@ load_dotenv('.env.secret')
 base_config = {} # A dictionary to store the configuration variables
 
 # environment variables unpacked into dicionary
-base_config_keys = ['DAYS_TO_RUN', 'TIMEZONE', 'REPORT_LAG', 'MIN_MESSAGE_FREQUENCY', 'EPSG_CODE', 'USERS', 'POI_FORM', 'REPORT_FORM']
+base_config_keys = ['DAYS_TO_RUN', 'TIMEZONE', 'REPORT_LAG', 'MIN_MESSAGE_FREQUENCY', 'EPSG_CODE', 'USERS', 'CONTACT_INFO_API', 'SIGN_UP_FORM', 'OBSERVATION_FORM']
 for key in base_config_keys:
     base_config[key] = os.getenv(key)
 
