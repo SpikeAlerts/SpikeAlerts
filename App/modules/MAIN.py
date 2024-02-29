@@ -48,15 +48,11 @@ poi_id_dict is used to inform the next step:
 
 If the environment variable 'USERS' is set to 'y' then we will do steps 5-6
                      
-# 5 = Update_Users_and_Compose_Messages - NOT DONE - Updates the Users table and composes messages.
+# 5 = Notify_and_Update_Users - NOT DONE - Checks the Users table and compiles info for messaging. Then composes messages, sends them, and updates the "Users" table field, alerted
 
-                        returns a list of tuples (contact_method, api_id, message) called messsage_info
+# 6 = Send_Reports_and_Archive - NOT DONE, may move to daily updates - Periodically send reports to manager/orgs & archive the alerts and reports to another database
 
-# 6 = Send_Notifications - NOT DONE - send the above messsages
-
-# 7 = Send_Reports_and_Archive - NOT DONE - Periodically send reports to manager/orgs & archive the alerts and reports to another database
-
-# 8 = Calculate next update time
+# 7 = Calculate next update time
 '''
 
 # Import the modules listed above
@@ -66,10 +62,9 @@ from modules import Call_APIs # 1
 from modules import Update_Sensor_Tables # 2
 from modules import Update_Alert_Tables # 3
 from modules import Update_POIs_and_Reports # 4
-#from modules import Update_Users_and_Compose_Messages # 5
-#from modules import Send_Notifications # 6
-#from modules import Send_Reports_and_Archive # 7
-from modules.Database.Queries import Sensor as sensor_query # 8
+from modules import Notify_and_Update_Users # 5
+#from modules import Send_Reports_and_Archive # 6
+from modules.Database.Queries import Sensor as sensor_query # 7
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -116,13 +111,14 @@ def main(base_config, runtime, next_system_update):
         
         if base_config['USERS'] == 'y':
         
-            pass
             # ~~~~~~~~~~~~~~~~~~~~~
 
-            # 5) Workflow for updating our database table "Users" and Compose messages to send
+            # 5) Workflow for updating our database table "Users," Compose, and send messages
 
-            #message_info = Update_Users_and_Compose_Messages.workflow(poi_id_dict)
+            message_df = Notify_and_Update_Users.workflow(poi_id_dict, base_config)
             
+            print(message_df)
+                        
             # ~~~~~~~~~~~~~~~~~~~~
             
             # 6) Workflow to send messages
