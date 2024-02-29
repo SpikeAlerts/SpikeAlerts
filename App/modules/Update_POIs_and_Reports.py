@@ -202,12 +202,12 @@ def Add_alerts_to_pois(sensor_ids, is_sensitive, epsg_code):
     
     cmd = sql.SQL('''
     WITH alerts_to_update as
-	    (
+	(
 	    SELECT alert_id, radius_meters, geometry
 	    FROM alerts_w_info
 	    WHERE sensor_id = ANY ( {} )
 	    AND sensitive = {}
-	    ), pois_w_alert_ids AS
+	), pois_w_alert_ids AS
     (
 	    SELECT p.poi_id, ARRAY_AGG(s.alert_id) as new_alerts
 	    FROM alerts_to_update s, "Places of Interest" p

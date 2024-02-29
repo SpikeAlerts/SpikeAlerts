@@ -25,7 +25,7 @@ import modules.Sensors.Sensor_Functions as sensors
 
 def workflow(poi_id_dict, base_config):
     '''
-    Runs the full workflow to check our "Users" table, compose and send messages, and update the "Users" table alerted field.
+    Runs the full workflow to check our "Users" table, compose and send messages, and update the "Users" table alerted & last_contact fields.
     
     Parameters:
 
@@ -38,17 +38,13 @@ def workflow(poi_id_dict, base_config):
                              )
     
     # Get users who should be alerted
-    # Returns a dataframe w/ user_id, poi_id, sensitive, contact_method, api_id, last_contact
+    # Returns a dataframe w/ user_id, poi_id, sensitive, contact_method, api_id
     
     new_alert_user_df = user_queries.Get_Users_to_alert(base_config['TIMEZONE'], base_config['MIN_MESSAGE_FREQUENCY'])
     new_alert_user_df['type_of_message'] = 'start'
-    
-    # Get users who should be unalerted
-    
-    
         
     print(new_alert_user_df)
     
-    return user_df
+    # Get users who should be unalerted
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`                

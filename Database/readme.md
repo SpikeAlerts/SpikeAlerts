@@ -237,7 +237,7 @@ INSERT INTO base."Users"
 	contact_method, -- text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Messaging/{contact_method}.py
 	api_id, -- text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
 	sensitive, -- boolean, -- True = send alerts when "Unhealthy for sensitive populations"
-	days_to_contact, -- int [] DEFAULT array[0,1,2,3,4,5,6]::int[], -- 0 = Monday, 6 = Sunday
+	days_to_contact, -- int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
 	start_time, -- time, -- The earliest time to send the user a message
 	end_time -- time, -- The latest time to send the user a message
 )
@@ -247,7 +247,7 @@ VALUES
 	'Twilio', -- Folder 
 	1, -- REDCap record_id
 	TRUE, -- Is sensitive
-	ARRAY[0,1,2,3,4,5,6]::int[], -- Anyday
+	ARRAY[1,2,3,4,5,6,7]::int[], -- Anyday
 	'00:00', -- Starting at Midnight
 	'23:59:59' -- Ending just before midnight
 );

@@ -63,7 +63,7 @@ from modules import Update_Sensor_Tables # 2
 from modules import Update_Alert_Tables # 3
 from modules import Update_POIs_and_Reports # 4
 from modules import Notify_and_Update_Users # 5
-#from modules import Send_Reports_and_Archive # 6
+#from modules import Send_Reports_and_Archive # 6 <- probably will move to the daily updates
 from modules.Database.Queries import Sensor as sensor_query # 7
 
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,21 +115,15 @@ def main(base_config, runtime, next_system_update):
 
             # 5) Workflow for updating our database table "Users," Compose, and send messages
 
-            message_df = Notify_and_Update_Users.workflow(poi_id_dict, base_config)
-            
-            print(message_df)
-                        
-            # ~~~~~~~~~~~~~~~~~~~~
-            
-            # 6) Workflow to send messages
+            Notify_and_Update_Users.workflow(poi_id_dict, base_config)
             
     # ~~~~~~~~~~~~~~~~~~~~
        
-    # 7) If it's time, send reports to manager/orgs and archive data somewhere
+    # ?) If it's time, send reports to manager/orgs and archive data somewhere
     
     # ~~~~~~~~~~~~~~~~~~~~
        
-    # 8) Get the next regular update time
+    # 6) Get the next regular update time
         
     next_regular_update = sensor_query.Get_next_regular_update(base_config['TIMEZONE'])
 
