@@ -45,7 +45,7 @@ sensor_id_dict is used to inform the next step:
                                         
 reports_dict is used to inform the next step:
 
-If the environment variable 'USERS' is set to 'y' then we will do steps 5-6
+If the environment variable 'USERS' is set to 'y' then we will do step 5
                      
 # 5 = Notify_and_Update_Users - NOT DONE - Checks the Users table and compiles info for messaging. Then composes messages, sends them, and updates the "Users" table field, alerted
 
@@ -90,6 +90,7 @@ def main(base_config, runtime, next_system_update):
     sensors_df, sensor_types_updated = Call_APIs.workflow(runtime, base_config['TIMEZONE'])
 
     if len(sensors_df) > 0:
+    
         # 2) Update our database tables "Sensors" and "Sensor Type Information"
 
         Update_Sensor_Tables.workflow(sensors_df, sensor_types_updated, runtime)
@@ -112,13 +113,13 @@ def main(base_config, runtime, next_system_update):
         
             # ~~~~~~~~~~~~~~~~~~~~~
 
-            # 5) Workflow for updating our database table "Users," Compose, and send messages
+            # 5) Workflow for updating our database table "Users" and Compose and send messages
 
             Notify_and_Update_Users.workflow(reports_dict, base_config)
             
     # ~~~~~~~~~~~~~~~~~~~~
        
-    # ?) If it's time, send reports to manager/orgs and archive data somewhere
+    # ?) Probably moving this to daily updates - If it's time, send reports to manager/orgs and archive data somewhere
     
     # ~~~~~~~~~~~~~~~~~~~~
        
