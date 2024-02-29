@@ -33,6 +33,7 @@ def Get_Users_to_alert(timezone, min_message_frequency):
     user_id - int - our unique identifier for users
     poi_id - int - our unique identifier for Places of Interest
     sensitive - boolean - user gets sensitive alerts
+    contact_method - str - corresponds to a script in modules/Users/Contact_Methods
     api_id - str - id for the user information in remote database
     '''
     
