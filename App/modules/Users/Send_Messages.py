@@ -8,7 +8,7 @@ from dotenv import load_dotenv # Loading .env info
 
 # Database 
 
-from App.modules import Basic_PSQL as psql
+from modules.Database import Basic_PSQL as psql
 import psycopg2
 from psycopg2 import sql
 
