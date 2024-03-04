@@ -150,7 +150,7 @@ END$$;
 
 CREATE VIEW base.sensor_ids_w_info AS
 (
-SELECT s.sensor_id, i.sensor_type, i.monitor_name, i.api_fieldname, 
+SELECT s.sensor_id, i.sensor_type, i.api_name, i.monitor_name, i.api_fieldname, 
        i.pollutant, i.metric, i.thresholds, i.radius_meters, i.last_update, i.update_frequency
 FROM base."Sensor Type Information" i
 RIGHT JOIN base."Sensors" s ON (i.sensor_type = s.sensor_type)
