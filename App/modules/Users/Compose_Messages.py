@@ -27,6 +27,7 @@ Air quality may be unhealthy near '''
     # URLs cannot be sent until phone number is verified
     if verified_number:
         message = message + f'''
+        
 {webmap_link}'''
     else:
         message = message + '''
@@ -41,7 +42,7 @@ Text STOP to unsubscribe'''
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def end_alert_message(duration, severity, report_url = '', verified_number = True):
+def end_alert_message(duration, severity, report_url = ''):
     '''
     Get a list of messages to send when an alert is over
 
@@ -49,7 +50,6 @@ def end_alert_message(duration, severity, report_url = '', verified_number = Tru
     duration = integer (number of minutes)
     severity = the alert interpretted by health benchmarks
     report_url = string sending the user to the correct site to report any observations
-    verified_number = Can we send URLs for their contact_method?
     
     Returns a message (string)
     '''
@@ -61,7 +61,7 @@ Severity: {severity}
 Report here - '''
     
     # URLs cannot be sent until phone number is verified
-    if verified_number:
+    if report_url != '':
         message = message + f"{report_url}"
     else:
         message = message + f'Report option coming soon'
