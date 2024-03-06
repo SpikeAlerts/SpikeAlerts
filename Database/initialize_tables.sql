@@ -97,7 +97,7 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 
 CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs (AKA users)
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
-	name varchar(100), -- A name for the POI. Can be null for privacy
+	name varchar(100) DEFAULT '', -- A name for the POI. Can be null for privacy
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
     active_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids (for sensitive populations)
 	cached_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
