@@ -8,6 +8,36 @@
 -- You can run this by using a psql command like:
 -- psql "host=postgres.cla.umn.edu user=<your_username> password=<your_password> " -f 4_initialize_tables.sql
 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- Create Functions
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- This function maps a value to its health descriptor
+
+CREATE or REPLACE function map_to_health(val float, thresholds float [])
+returns text language sql immutable as $$
+	SELECT CASE
+		   WHEN val >= thresholds[7] THEN '7 ERROR (too high)'
+		   WHEN val >= thresholds[6] THEN '6 hazardous'
+		   WHEN val >= thresholds[5] THEN '5 very unhealthy'
+		   WHEN val >= thresholds[4] THEN '4 unhealthy'
+		   WHEN val >= thresholds[3] THEN '3 unhealthy for sensitive groups'
+		   WHEN val >= thresholds[2] THEN '2 moderate'
+		   WHEN val >= thresholds[1] THEN '1 good'
+		   ELSE '0 ERROR (too low)'
+		   END as health_descriptor
+$$;
+
+-- Array differences
+
+CREATE or REPLACE function array_diff(array1 anyarray, array2 anyarray)
+returns anyarray language sql immutable as $$
+    select coalesce(array_agg(elem), '{}')
+    from unnest(array1) elem
+    where elem <> all(array2)
+$$;
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -29,7 +59,7 @@ CREATE TABLE "Daily Log" -- This is to store important daily metrics
      new_POIs int DEFAULT 0,
      new_sensors int DEFAULT 0,
      retired_sensors int DEFAULT 0,
-	 alerts_sent int DEFAULT 0,
+	 messages_sent int DEFAULT 0,
 	 reports_for_day int DEFAULT 0
     );
     
@@ -113,7 +143,7 @@ CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each
 	poi_name varchar(100), -- A name to attach to the POI. Can be null for privacy
 	start_time timestamp,
 	duration_minutes integer,
-	sensitive boolean, -- Indicates whether this is a report only for sensitive groups
+	severity text, -- Health Descriptor of the worst severity of all alerts
 	alert_ids bigint [] -- List of alert_ids
     );
     
@@ -197,17 +227,3 @@ SELECT s.name, a.start_time, s.last_seen,
 FROM base."Active Alerts" a
 INNER JOIN base."Sensors" s ON (a.sensor_id = s.sensor_id)
 );
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--- Create Functions
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Array differences
-
-CREATE or REPLACE function array_diff(array1 anyarray, array2 anyarray)
-returns anyarray language sql immutable as $$
-    select coalesce(array_agg(elem), '{}')
-    from unnest(array1) elem
-    where elem <> all(array2)
-$$;
