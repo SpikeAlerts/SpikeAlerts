@@ -22,7 +22,7 @@ from importlib import import_module
   
 # ~~~~~~~~~~~~~~ 
    
-def workflow(messaging_df, contact_info_api):
+def workflow(messaging_df, contact_info_api, timezone):
     '''
     This function will send each message to the corresponding users
 
@@ -48,7 +48,7 @@ def workflow(messaging_df, contact_info_api):
         # Get the contact information (from the more secure external storage)
         
         module = f'modules.Users.Contact_Info_APIs.{contact_info_api}'
-        api_ids, contacts, messages = import_module(module).get_contacts(temp_df) # Make sure this returns these 3 tuples with same indexing!!
+        api_ids, contacts, messages = import_module(module).get_contacts(temp_df) # Make sure this returns these 3 lists with same indexing!!
         
         # Send Messages (Using this method)
         # Returns indices of the above tuples that have unsubscribed
@@ -64,7 +64,7 @@ def workflow(messaging_df, contact_info_api):
             
             messages_sent -= unsubscribed_indices # Didn't send these messages
     
-    update_daily_log(messages_sent)
+    update_daily_log(messages_sent, timezone)
     
 # ~~~~~~~~~~~~~
 
@@ -96,3 +96,19 @@ AND contact_method = {};
                 sql.Literal(contact_method))
     
     psql.send_update(cmd)
+    
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+def Message_mgmt(message):
+    '''
+    This function should send the string argument to the manager of the app 
+    '''
+    
+    load_dotenv('env.secret')
+    
+    method = os.getenv('MGMT_CONTACT_METHOD')
+    contact = os.getenv('MGMT_CONTACT')
+    
+    module = f'modules.Users.Contact_Methods.{method}'
+    
+    import_module(module).send_messages([contact], [message]) 
