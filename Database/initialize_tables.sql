@@ -143,6 +143,7 @@ CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each
 	poi_name varchar(100), -- A name to attach to the POI. Can be null for privacy
 	start_time timestamp,
 	duration_minutes integer,
+	sensitive boolean, -- Indicates whether this is a report only for sensitive groups
 	alert_ids bigint [] -- List of alert_ids
     );
     
