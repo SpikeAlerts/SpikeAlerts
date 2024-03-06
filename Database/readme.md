@@ -207,7 +207,9 @@ FROM geom;
 ---
 # Extension (Users)
 
-If you want to have folks sign up for the alerts we'll have to add one more table.
+If you want to have folks sign up for the alerts we'll have to add one more table. 
+
+Could change the schema for extra privacy - will need to add schema to the database search path in .env file
 
 ## CREATE TABLE SQL:
 
@@ -243,9 +245,9 @@ INSERT INTO base."Users"
 )
 VALUES
 (
-	123, -- Smith/Bituminous
-	'Twilio', -- Contact Method Script name in App/modules/Users/Contact_Methods
-	1, -- REDCap record_id
+	1, -- Smith/Bituminous
+	'Template', -- Contact Method Script name in App/modules/Users/Contact_Methods
+	1, -- Record id for external database
 	TRUE, -- Is sensitive
 	ARRAY[1,2,3,4,5,6,7]::int[], -- Anyday
 	'00:00', -- Starting at Midnight
