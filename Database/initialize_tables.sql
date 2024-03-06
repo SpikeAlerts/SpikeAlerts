@@ -143,7 +143,6 @@ CREATE TABLE "Reports Archive"-- These are for keeping track of reports for each
 	poi_name varchar(100), -- A name to attach to the POI. Can be null for privacy
 	start_time timestamp,
 	duration_minutes integer,
-	severity text, -- Health Descriptor of the worst severity of all alerts
 	alert_ids bigint [] -- List of alert_ids
     );
     
