@@ -8,6 +8,36 @@
 -- You can run this by using a psql command like:
 -- psql "host=postgres.cla.umn.edu user=<your_username> password=<your_password> " -f 4_initialize_tables.sql
 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- Create Functions
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- This function maps a value to its health descriptor
+
+CREATE or REPLACE function map_to_health(val float, thresholds float [])
+returns text language sql immutable as $$
+	SELECT CASE
+		   WHEN val >= thresholds[7] THEN '7 ERROR (too high)'
+		   WHEN val >= thresholds[6] THEN '6 hazardous'
+		   WHEN val >= thresholds[5] THEN '5 very unhealthy'
+		   WHEN val >= thresholds[4] THEN '4 unhealthy'
+		   WHEN val >= thresholds[3] THEN '3 unhealthy for sensitive groups'
+		   WHEN val >= thresholds[2] THEN '2 moderate'
+		   WHEN val >= thresholds[1] THEN '1 good'
+		   ELSE '0 ERROR (too low)'
+		   END as health_descriptor
+$$;
+
+-- Array differences
+
+CREATE or REPLACE function array_diff(array1 anyarray, array2 anyarray)
+returns anyarray language sql immutable as $$
+    select coalesce(array_agg(elem), '{}')
+    from unnest(array1) elem
+    where elem <> all(array2)
+$$;
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -29,7 +59,7 @@ CREATE TABLE "Daily Log" -- This is to store important daily metrics
      new_POIs int DEFAULT 0,
      new_sensors int DEFAULT 0,
      retired_sensors int DEFAULT 0,
-	 alerts_sent int DEFAULT 0,
+	 messages_sent int DEFAULT 0,
 	 reports_for_day int DEFAULT 0
     );
     
@@ -97,7 +127,7 @@ CREATE TABLE "Archived Alerts" -- Archive of the Above table
 
 CREATE TABLE "Places of Interest"-- This is our internal record keeping for POIs (AKA users)
 	(poi_id bigserial PRIMARY KEY, -- Unique Identifier
-	name varchar(100), -- A name for the POI. Can be null for privacy
+	name varchar(100) DEFAULT '', -- A name for the POI. Can be null for privacy
 	alerts_sent int DEFAULT 0, -- Number of alerts sent
     active_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of Active Alert ids (for sensitive populations)
 	cached_alerts_sensitive bigint [] DEFAULT array[]::bigint [], -- List of ended Alerts ids in same event as above
@@ -150,7 +180,7 @@ END$$;
 
 CREATE VIEW base.sensor_ids_w_info AS
 (
-SELECT s.sensor_id, i.sensor_type, i.monitor_name, i.api_fieldname, 
+SELECT s.sensor_id, i.sensor_type, i.api_name, i.monitor_name, i.api_fieldname, 
        i.pollutant, i.metric, i.thresholds, i.radius_meters, i.last_update, i.update_frequency
 FROM base."Sensor Type Information" i
 RIGHT JOIN base."Sensors" s ON (i.sensor_type = s.sensor_type)
@@ -177,11 +207,11 @@ CREATE VIEW base.alerts_w_info AS
 SELECT s.sensor_id, s.name, s.alert_id, s.sensitive, s.start_time, s.last_seen,
 	   i.pollutant, i.metric, i.thresholds, i.radius_meters,
        s.current_reading, s.avg_reading, s.max_reading,
+       map_to_health(s.current_reading, s.thresholds) as health_descriptor
 	   s.geometry
 FROM base.alerted_sensors s
 INNER JOIN base.sensor_ids_w_info i ON (s.sensor_id = i.sensor_id)
 );
- 
  
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -197,17 +227,3 @@ SELECT s.name, a.start_time, s.last_seen,
 FROM base."Active Alerts" a
 INNER JOIN base."Sensors" s ON (a.sensor_id = s.sensor_id)
 );
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--- Create Functions
-
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Array differences
-
-CREATE or REPLACE function array_diff(array1 anyarray, array2 anyarray)
-returns anyarray language sql immutable as $$
-    select coalesce(array_agg(elem), '{}')
-    from unnest(array1) elem
-    where elem <> all(array2)
-$$;

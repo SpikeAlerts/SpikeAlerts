@@ -107,7 +107,6 @@ def main(base_config, runtime, next_system_update):
 
         reports_dict = Update_POIs_and_Reports.workflow(sensor_id_dict, ended_alert_ids, runtime, base_config)
         
-        print(reports_dict)
         
         if base_config['USERS'] == 'y':
         

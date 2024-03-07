@@ -17,10 +17,10 @@ from modules.Database.Queries import User as user_queries
 
 import pandas as pd
 
-# Sensor Functions
+# Messaging Functions
 
-import modules.Sensors.Sensor_Functions as sensors
 from modules.Users import Send_Messages
+from modules.Users import Compose_Messages
 
 ## Workflow
 
@@ -29,11 +29,20 @@ def workflow(reports_dict, base_config):
     Runs the full workflow to check our "Users" table for folks to contact,
      compose and send messages, and update the "Users" table alerted & last_contact fields.
      
+    To Test: Alter sensor health thresholds with
+    
+    UPDATE "Sensor Type Information"
+    SET thresholds = ARRAY[0, 12.1, 35.5, 55.5, 150.5, 250.5, 1000],
+    last_update = last_update - Interval '10 minutes';
+     
      Steps:
      
      0) Check if there is a city-wide air quality alert for all groups
      
         returns True or False - NOT DONE
+        
+        
+     ### WE NEED TO CHANGE THIS ORDER! First, Ended Alerts then Ongoing alerts (in morning) then new alerts
      
      1) Send new alerts:
         
@@ -43,15 +52,15 @@ def workflow(reports_dict, base_config):
         
         b) Use above dataframe to compose messages
         
-        returns a list of tuples (contact_method, api_id, message)
+        returns a dataframe, messaging_df, with fields: contact_method, api_id, message
         
-        c) Send Messages 
+        c) Send Messages - see modules/Users/Send_Messages.py
         
         d) Update internal database of these users with 
         last_contact = CURRENT TIMESTAMP AT TIME ZONE {base_config['TIMEZONE']}
         alerted = TRUE
      
-     2) Send end alert messages:
+     2) Send end alert messages :
         
         a) Check for alerted users with POIs that recently had a report written (see reports_dict parameter)
         
@@ -59,9 +68,9 @@ def workflow(reports_dict, base_config):
         
         b) Use above dataframe to compose messages
         
-        returns a list of tuples (contact_method, api_id, message)
+        returns a dataframe, messaging_df, with fields: contact_method, api_id, message
         
-        c) Send Messages (if in_contact_hours = True)
+        c) Send Messages (if in_contact_hours = True) - see modules/Users/Sen_Messages.py
         
         d) Update internal database of all these users with
         last_contact = CURRENT TIMESTAMP AT TIME ZONE {base_config['TIMEZONE']}
@@ -90,6 +99,8 @@ def workflow(reports_dict, base_config):
     
     # ~~~~~~~~~~~~~~~~~~~~~~~
     
+    ### WE NEED TO CHANGE THIS ORDER! First, Ended Alerts then Ongoing alerts (in morning) then new alerts
+    
     # 1) Send new alerts:
     
     # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,9 +108,7 @@ def workflow(reports_dict, base_config):
     # a) Get users who should be alerted (See modules/Database/Queries/User.py)
     # Returns a dataframe w/ user_id, poi_id, sensitive, contact_method, api_id
     
-    new_alert_user_df = user_queries.Get_Users_to_alert(base_config['TIMEZONE'], base_config['MIN_MESSAGE_FREQUENCY'])
-        
-    print(new_alert_user_df)
+    new_alert_user_df = user_queries.Get_Users_to_message_alert(base_config['TIMEZONE'], base_config['MIN_MESSAGE_FREQUENCY'])
     
     if len(new_alert_user_df) > 0:
     
@@ -108,13 +117,16 @@ def workflow(reports_dict, base_config):
         # b) Use above dataframe to compose messages
         # returns a dataframe, messaging_df, with fields: contact_method, api_id, message
         
-        messaging_df = Parse_new_alert_user_df(new_alert_user_df, base_config['EPSG_CODE'])
+        messaging_df = Parse_new_alert_user_df(new_alert_user_df, 
+                                               base_config['EPSG_CODE'],
+                                               base_config['WEBMAP_LINK'])
+                                               
         
         # ~~~~~~~~~~~~~~~~~~~~~~~
         
         # c) Send Messages
         
-        Send_Messages.workflow(messaging_df, base_config['CONTACT_INFO_API'])
+        Send_Messages.workflow(messaging_df, base_config['CONTACT_INFO_API'], base_config['TIMEZONE'])
         
         # ~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -122,7 +134,7 @@ def workflow(reports_dict, base_config):
         # last_contact = CURRENT TIMESTAMP AT TIME ZONE {base_config['TIMEZONE']}
         # alerted = TRUE
         
-        Update_users_before_message(new_alert_user_df.user_id.to_list(), alerted, base_config['TIMEZONE'])
+        Update_users_after_message(new_alert_user_df.user_id.to_list(), 'TRUE', base_config['TIMEZONE'])
     
     # ~~~~~~~~~~~~~~~~~~~~~~~
      
@@ -134,53 +146,110 @@ def workflow(reports_dict, base_config):
     
     # with POIs that recently had a report written (see reports_dict parameter)
     
-    # returns a dataframe w/ user_id, report_id, contact_method, api_id, in_contact_hours (True or False)
+    #reports_dict = {'TRUE': [(123, '00002-030624')], 'FALSE': []}
+    
+    end_alert_user_df = user_queries.Get_Users_to_message_unalert(reports_dict, base_config['TIMEZONE'])
+    
+    if len(end_alert_user_df) > 0:
+    
+        # ~~~~~~~~~~~~~~~~~~~~~~~
+            
+        # b) Use above dataframe to compose messages
+        # returns a dataframe, messaging_df, with fields: contact_method, api_id, message
+        
+        messaging_df = Parse_end_alert_user_df(end_alert_user_df, 
+                                               base_config['EPSG_CODE'],
+                                               base_config['OBSERVATION_BASEURL'])
+                                               
+        
+        # ~~~~~~~~~~~~~~~~~~~~~~~
+        
+        # c) Send Messages
+        
+        Send_Messages.workflow(messaging_df, base_config['CONTACT_INFO_API'], base_config['TIMEZONE'])
+        
+        # ~~~~~~~~~~~~~~~~~~~~~~~
+        
+        # d) Update internal database of these users with 
+        # last_contact = CURRENT TIMESTAMP AT TIME ZONE {base_config['TIMEZONE']}
+        # alerted = FALSE
+        
+        Update_users_after_message(end_alert_user_df.user_id.to_list(), 'FALSE', base_config['TIMEZONE'])
     
     # ~~~~~~~~~~~~~~~~~~~~~~~
     
-    # b) Use above dataframe to compose messages
+    # 3) Unalert Users (with reports written outside of contact hours)
     
-    # returns a list of tuples (contact_method, api_id, message)
+    # Please see app/modules/Database/Queries/User.py for query
     
-    # ~~~~~~~~~~~~~~~~~~~~~~~
-    
-    # c) Send Messages (if in_contact_hours = True)
-    
-    # ~~~~~~~~~~~~~~~~~~~~~~~
-    
-    # d) Update internal database of all these users with
-    # last_contact = CURRENT TIMESTAMP AT TIME ZONE {base_config['TIMEZONE']}
-    # alerted = FALSE
+    Unalert_Users()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
-def Parse_new_alert_user_df(new_alert_user_df, epsg_code):
+def Parse_new_alert_user_df(new_alert_user_df, epsg_code, webmap_link):
     '''
     Uses the new_alert_user_df Dataframe to compose unique messages 
     
-    returns a list of tuples (contact_method, api_id, message)
+    returns a dataframe, messaging_df, with fields: poi_name, contact_method, api_id, message
     
     '''
+    # Initialize returned value
+        
+    messaging_df = pd.DataFrame(columns = ['contact_method', 'api_id', 'message'])
     
-    messaging_info = []
+    for i, new_alert_user in new_alert_user_df.iterrows():
     
-    return messaging_info  
-
-#    # Now get the information from that report
-#   cmd = sql.SQL('''SELECT start_time, duration_minutes
-#             FROM "Reports Archive"
-#             WHERE report_id = {};
-#''').format(sql.Literal(report_id))   
+        poi_name = new_alert_user.poi_name
+    
+        message = Compose_Messages.new_alert_message(poi_name, webmap_link)
+        
+        messaging_df.loc[i] = [new_alert_user.contact_method, new_alert_user.api_id, message]
+    
+    return messaging_df  
 
 # ~~~~~~~~~~~~~
 
-def Update_users_before_message(user_ids, alerted, timezone):
+def Parse_end_alert_user_df(end_alert_user_df, epsg_code, report_url):
     '''
+    Uses the end_alert_user_df Dataframe to compose unique messages 
+    
+    returns a dataframe, messaging_df, with fields: poi_name, contact_method, api_id, message
+    
+    '''
+    # Initialize returned value
+        
+    messaging_df = pd.DataFrame(columns = ['contact_method', 'api_id', 'message'])
+    
+    for i, end_alert_user in end_alert_user_df.iterrows():
+    
+        duration = end_alert_user.duration_minutes
+        severity = end_alert_user.severity
+    
+        message = Compose_Messages.end_alert_message(end_alert_user.duration_minutes, 
+                                                    end_alert_user.severity,
+                                                    report_url)
+        
+        messaging_df.loc[i] = [end_alert_user.contact_method, end_alert_user.api_id, message]
+    
+    return messaging_df 
 
+# ~~~~~~~~~~~~~
+
+def Update_users_after_message(user_ids, alerted, timezone):
+    '''
+    This function updates the users in our database.
+    
+    Changes alerted = True or False and last_contact = CURRENT_TIMESTAMP
+    
+    parameters:
+    
+    user_ids - list - user_ids in our database to update
+    alerted - string - TRUE or FALSE (not case senstive)
+    timezone - string - pytz timezone
     '''
 
     cmd = sql.SQL('''
-    UPDATE "Sign Up Information"
+    UPDATE "Users"
     SET alerted = {},
     last_contact = CURRENT_TIMESTAMP AT TIME ZONE {}
     WHERE user_id = ANY ( {} );
@@ -189,4 +258,71 @@ def Update_users_before_message(user_ids, alerted, timezone):
                 sql.Literal(user_ids)
                 )
                 
-    psql.send_update(cmd)        
+    psql.send_update(cmd)     
+    
+# ~~~~~~~~~~~~~
+
+def Unalert_Users():
+    '''
+    To catch the users that had reports written outside of contact hours.
+    
+    This function queries the database for alerted users that have active alerts
+    but their Place of Interest has empty cached and active alerts
+    
+    Changes alerted = False where this is true
+    
+    potential expansion?
+    Archive a message to send to the user when within contact hours
+    
+    parameters:
+    time_buffer - int - minutes to queue a message until contact hours begin 
+
+    '''
+                                      
+    # Iterate through the sensitivities
+                                      
+    for is_sensitive in ['TRUE', 'FALSE']:
+    
+        active_field = 'active_alerts'
+        cache_field = 'cached_alerts'
+        
+        if is_sensitive == 'TRUE':
+            cache_field += '_sensitive'
+            active_field += '_sensitive'
+        
+        
+        # Select unalerted pois
+        # Then query users that are:
+        # active, alerted, match this sensitivity, and do not have a poi in above
+        
+        # Update these users' alerted to false
+        
+        cmd = sql.SQL('''
+                        WITH unalerted_pois as
+                        (
+	                        SELECT poi_id
+	                        FROM "Places of Interest"
+	                        WHERE 
+	                        {} = {}
+	                        AND {} = {}
+                        ), users_to_update as
+                        (
+	                        SELECT u.user_id
+	                        FROM "Users" u
+	                        LEFT JOIN unalerted_pois p ON (u.poi_id = p.poi_id)
+	                        WHERE active = TRUE
+	                        AND p.poi_id IS NOT NULL
+	                        AND alerted = TRUE
+	                        AND sensitive = {}
+                        )
+                        UPDATE "Users" u
+                        SET alerted = FALSE
+                        FROM users_to_update uu
+                        WHERE u.user_id = uu.user_id
+                        ;
+                 ''').format(sql.Identifier(active_field), sql.Literal('{}'),
+                            sql.Identifier(cache_field), sql.Literal('{}'),
+                            sql.Literal(is_sensitive)
+                        )
+                
+        psql.send_update(cmd)    
