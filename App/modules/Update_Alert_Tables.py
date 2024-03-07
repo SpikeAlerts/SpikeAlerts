@@ -97,7 +97,7 @@ def workflow(sensors_df, runtime):
         
             # Remove from active alerts
         
-            ended_alert_ids = Remove_active_alerts(ended_spikes_df, is_sensitive)
+            ended_alert_ids += Remove_active_alerts(ended_spikes_df, is_sensitive)
             
     return sensor_id_dict, ended_alert_ids
 
