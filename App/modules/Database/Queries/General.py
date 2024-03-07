@@ -48,7 +48,7 @@ def Get_extent():
     
     # Query for bounding box of boundary buffered 100 meters
 
-    cmd = sql.SQL('''SELECT minlng, minlat, maxlng, maxlat from "extent"
+    cmd = sql.SQL('''SELECT minlng, minlat, maxlng, maxlat from "extent";
     ''')
 
     response = psql.get_response(cmd)
