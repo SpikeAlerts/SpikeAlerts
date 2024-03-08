@@ -22,7 +22,7 @@ def send_messages(contact_info_list, messages):
 
     for contact_info, message in zip(contact_info_list, messages):
 
-        print('contact info: ', contact_info, '\n\n message: ', message)
+        print('contact info: ', contact_info, '\n\n message:\n', message)
         
         time.sleep(1) # Sleeping for 1 second between sending messages
         
