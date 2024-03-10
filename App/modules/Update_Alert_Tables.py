@@ -278,7 +278,7 @@ AND a.sensitive = {};
 
     for i, row in ongoing_spikes_df.iterrows():
         sensor_id = int(row.sensor_id)
-        current_reading = int(row.current_reading)
+        current_reading = float(row.current_reading)
         
         cmd = cmd_template.format(sql.Literal(formatted_runtime),
                                   sql.Literal(sensor_id),
