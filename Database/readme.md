@@ -222,10 +222,11 @@ CREATE TABLE base."Users" -- Storage for all sensors
 	last_contact timestamp DEFAULT TIMESTAMP'2000-01-01 00:00:00', -- When have we last messaged this person?
 	contact_method text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Contact_Methods/{contact_method}.py
 	api_id text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
-	sensitive boolean, -- True = send alerts when "Unhealthy for sensitive populations"
+	sensitive boolean DEFAULT FALSE, -- True = send alerts when "Unhealthy for sensitive populations"
 	days_to_contact int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
-	start_time time, -- The earliest time to send the user a message
-	end_time time, -- The latest time to send the user a message
+	start_time time DEFAULT '08:00:00', -- The earliest time to send the user a message
+	end_time time DEFAULT '20:00:00', -- The latest time to send the user a message
+	message_freq int DEFAULT 120, The minimum number of minutes to wait between sending messages
 	active boolean DEFAULT TRUE -- Is the user currently active?
 );
 ```
@@ -241,7 +242,8 @@ INSERT INTO base."Users"
 	sensitive, -- boolean, -- True = send alerts when "Unhealthy for sensitive populations"
 	days_to_contact, -- int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
 	start_time, -- time, -- The earliest time to send the user a message
-	end_time -- time, -- The latest time to send the user a message
+	end_time, -- time, -- The latest time to send the user a message
+	message_freq -- int DEFAULT 120, The minimum number of minutes to wait between sending messages
 )
 VALUES
 (
@@ -251,6 +253,7 @@ VALUES
 	TRUE, -- Is sensitive
 	ARRAY[1,2,3,4,5,6,7]::int[], -- Anyday
 	'00:00', -- Starting at Midnight
-	'23:59:59' -- Ending just before midnight
+	'23:59:59', -- Ending just before midnight
+	10 -- minimum 10 minute lag between messaging an ended alert and beginning a new one
 );
 ```

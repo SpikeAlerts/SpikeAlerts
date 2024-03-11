@@ -20,7 +20,7 @@ import modules.Database.Basic_PSQL as psql
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_Users_to_message_alert(timezone, min_message_frequency):
+def Get_Users_to_message_alert(timezone):
     '''
     This function queries the database for unalerted users that:
     have alerted poi_ids
@@ -30,7 +30,6 @@ def Get_Users_to_message_alert(timezone, min_message_frequency):
     parameters:
     
     timezone - string - timezone from the base .env file
-    min_message_frequency - str - minimum number of minutes between ending and sending a new alert to a user
     
     returns a dataframe with fields
     
@@ -66,13 +65,12 @@ def Get_Users_to_message_alert(timezone, min_message_frequency):
     AND EXTRACT(dow FROM CURRENT_DATE AT TIME ZONE {}) = ANY ( days_to_contact ) -- Days to contact user
     AND start_time < CURRENT_TIME AT TIME ZONE {} -- Current time less than Start time
     AND end_time > CURRENT_TIME AT TIME ZONE {} -- Current time greater than Start time
-    AND last_contact + INTERVAL '1 Minutes' * {} <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
+    AND last_contact + INTERVAL '1 Minutes' * message_freq <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
     ''').format(sql.Literal('{}'),
                 sql.Literal('{}'),
                 sql.Literal(timezone),
                 sql.Literal(timezone),
                 sql.Literal(timezone),
-                sql.Literal(int(min_message_frequency)),
                 sql.Literal(timezone)
                 )
                 
