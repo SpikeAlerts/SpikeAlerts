@@ -5,6 +5,29 @@
 from psycopg2 import sql
 from modules.Database import Basic_PSQL as psql
 
+### ~~~~~~~~~~~~~~~~~~~~~
+
+def Get_max_poi_id():
+    '''
+    This function gets the max poi_id in our database
+    
+    returns an integer, 0 if no pois
+    '''
+
+    cmd = sql.SQL('''
+        SELECT MAX(poi_id)
+    	FROM "Places of Interest";
+    ''')
+
+    response = psql.get_response(cmd)
+    
+    if response[0][0] == None:
+        max_poi_id = 0
+    else:
+        max_poi_id = response[0][0]
+        
+    return max_poi_id
+
 ### ~~~~~~~~~~~~~~~~~
 
 ##  New_Alerts

@@ -108,7 +108,7 @@ def workflow(reports_dict, base_config):
     # a) Get users who should be alerted (See modules/Database/Queries/User.py)
     # Returns a dataframe w/ user_id, poi_id, sensitive, contact_method, api_id
     
-    new_alert_user_df = user_queries.Get_Users_to_message_alert(base_config['TIMEZONE'], base_config['MIN_MESSAGE_FREQUENCY'])
+    new_alert_user_df = user_queries.Get_Users_to_message_alert(base_config['TIMEZONE'])
     
     if len(new_alert_user_df) > 0:
     

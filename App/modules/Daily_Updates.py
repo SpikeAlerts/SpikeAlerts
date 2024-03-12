@@ -8,6 +8,7 @@ import pytz # Timezones
 # Database 
 
 # from modules import Basic_PSQL as psql
+from modules.POI import POI_Functions as poi
 from modules.Sensors import Sensor_Functions as sensors
 from modules.Database.Queries import Sensor as sensor_queries
 from modules.Database.Queries import General as query
@@ -74,7 +75,7 @@ def workflow(base_config, next_update_time):
 
         # Update the Points of Interest
         
-        Update_POIs_active(base_config['EPSG_CODE'])
+        poi.Update_POIs_active(base_config['EPSG_CODE'])
         
 #         # Update "Sign Up Information" from REDCap - See Daily_Updates.py
 
@@ -125,45 +126,5 @@ def initialize_daily_log(len_new_users):
     VALUES ({}, {});
     ''').format(sql.Literal(len_new_users),
                 sql.Literal(len_new_users))
-
-    psql.send_update(cmd)
-   
- # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
-def Update_POIs_active(epsg_code):
-    '''
-    This function updates the "active" field in the table,
-    base."Places of Interest"
-    based upon if a sensor is nearby or not
-    
-    parameters:
-    
-    epsg_code - something to cast as int - The local UTM Coordinate Reference System EPSG code
-    '''
-
-    cmd = sql.SQL('''
-    WITH active_sensors as
-    (
-	    SELECT s.sensor_id, i.radius_meters, s.geometry
-	    FROM base."Sensors" s
-	    INNER JOIN base.sensor_ids_w_info i ON i.sensor_id = s.sensor_id
-	    WHERE s.channel_state = 1
-    ), pois_w_no_nearby_sensors as
-    (
-	    SELECT p.poi_id, 
-			    BOOL_OR ( ST_DWithin(ST_Transform(p.geometry, {}), -- CHANGE THIS!!
-					       ST_Transform(s.geometry, {}), -- CHANGE THIS!!
-					       s.radius_meters)) as nearby_sensor
-	    FROM active_sensors s, base."Places of Interest" p
-	    WHERE p.active = TRUE
-	    GROUP BY p.poi_id
-    )
-    UPDATE base."Places of Interest" pois
-    SET active = p.nearby_sensor
-    FROM pois_w_no_nearby_sensors p
-    WHERE pois.poi_id = p.poi_id;
-    ''').format(sql.Literal(int(epsg_code)),
-                sql.Literal(int(epsg_code))
-                )
 
     psql.send_update(cmd)

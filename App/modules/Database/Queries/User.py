@@ -13,6 +13,34 @@ import pytz # Timezones
 from psycopg2 import sql
 import modules.Database.Basic_PSQL as psql
 
+def Get_newest_api_id():
+    '''
+    Gets the "newest" user's api_id
+
+    Assuming that this is enough to acquire new users from the external storage
+
+    returns a string ('-1' if no users)
+    '''
+
+    cmd = sql.SQL('''
+    WITH newest_user as
+	(
+        SELECT MAX(user_id) as user_id
+        FROM "Users"
+	)
+    SELECT api_id 
+    FROM "Users" u, newest_user
+    WHERE u.user_id = newest_user.user_id;
+    ''')
+
+    response = psql.get_response(cmd)
+    
+    if response[0][0] == None:
+        max_api_id ='-1'
+    else:
+        max_api_id = response[0][0]
+    
+    return max_api_id
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -20,7 +48,7 @@ import modules.Database.Basic_PSQL as psql
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Get_Users_to_message_alert(timezone, min_message_frequency):
+def Get_Users_to_message_alert(timezone):
     '''
     This function queries the database for unalerted users that:
     have alerted poi_ids
@@ -30,7 +58,6 @@ def Get_Users_to_message_alert(timezone, min_message_frequency):
     parameters:
     
     timezone - string - timezone from the base .env file
-    min_message_frequency - str - minimum number of minutes between ending and sending a new alert to a user
     
     returns a dataframe with fields
     
@@ -66,13 +93,12 @@ def Get_Users_to_message_alert(timezone, min_message_frequency):
     AND EXTRACT(dow FROM CURRENT_DATE AT TIME ZONE {}) = ANY ( days_to_contact ) -- Days to contact user
     AND start_time < CURRENT_TIME AT TIME ZONE {} -- Current time less than Start time
     AND end_time > CURRENT_TIME AT TIME ZONE {} -- Current time greater than Start time
-    AND last_contact + INTERVAL '1 Minutes' * {} <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
+    AND last_contact + INTERVAL '1 Minutes' * message_freq <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
     ''').format(sql.Literal('{}'),
                 sql.Literal('{}'),
                 sql.Literal(timezone),
                 sql.Literal(timezone),
                 sql.Literal(timezone),
-                sql.Literal(int(min_message_frequency)),
                 sql.Literal(timezone)
                 )
                 
