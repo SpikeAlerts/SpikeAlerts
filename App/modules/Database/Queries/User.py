@@ -13,6 +13,34 @@ import pytz # Timezones
 from psycopg2 import sql
 import modules.Database.Basic_PSQL as psql
 
+def Get_newest_api_id():
+    '''
+    Gets the "newest" user's api_id
+
+    Assuming that this is enough to acquire new users from the external storage
+
+    returns a string ('-1' if no users)
+    '''
+
+    cmd = sql.SQL('''
+    WITH newest_user as
+	(
+        SELECT MAX(user_id) as user_id
+        FROM "Users"
+	)
+    SELECT api_id 
+    FROM "Users" u, newest_user
+    WHERE u.user_id = newest_user.user_id;
+    ''')
+
+    response = psql.get_response(cmd)
+    
+    if response[0][0] == None:
+        max_api_id ='-1'
+    else:
+        max_api_id = response[0][0]
+    
+    return max_api_id
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
