@@ -121,7 +121,9 @@ def Workflow(monitor_dict, monitor_api_df, timezone):
         # Concatenate to sensors_df
         temp_sensors_df = merged_df[sensors_df.columns]
         
-        sensors_df = pd.concat([sensors_df, temp_sensors_df], ignore_index = True)
+        sensors_df = pd.concat([sensors_df.astype(temp_sensors_df.dtypes), # if not sensors_df.empty else None,
+                                temp_sensors_df.astype(sensors_df.dtypes)], # if not temp_sensors_df.empty else None], 
+                                ignore_index = True)
         
         return sensors_df
 

@@ -99,7 +99,9 @@ def workflow(runtime, timezone):
                                              timezone) # Run Regular Update code for monitor
                                              
                 # Concatenate to sensors_df
-                sensors_df = pd.concat([sensors_df, temp_sensors_df],  ignore_index = True)
+                sensors_df = pd.concat([sensors_df.astype(temp_sensors_df.dtypes), # if not sensors_df.empty else None,
+                                    temp_sensors_df.astype(sensors_df.dtypes)],
+                                    ignore_index = True)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Check if there was any to update
