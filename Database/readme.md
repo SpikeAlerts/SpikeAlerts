@@ -77,6 +77,8 @@ Copy, paste, and execute the sql or use:
 ---
 ## 7) Create the "App" user
 
+You will want to create the "Users" table before this step if you are using that extension (see end of this document)
+
 ## PSQL:
 ```
 CREATE ROLE app with LOGIN;
@@ -226,7 +228,7 @@ CREATE TABLE base."Users" -- Storage for all sensors
 	days_to_contact int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
 	start_time time DEFAULT '08:00:00', -- The earliest time to send the user a message
 	end_time time DEFAULT '20:00:00', -- The latest time to send the user a message
-	message_freq int DEFAULT 120, The minimum number of minutes to wait between sending messages
+	message_freq int DEFAULT 120, -- The minimum number of minutes to wait between sending messages
 	active boolean DEFAULT TRUE -- Is the user currently active?
 );
 ```
@@ -243,7 +245,7 @@ INSERT INTO base."Users"
 	days_to_contact, -- int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
 	start_time, -- time, -- The earliest time to send the user a message
 	end_time, -- time, -- The latest time to send the user a message
-	message_freq -- int DEFAULT 120, The minimum number of minutes to wait between sending messages
+	message_freq -- int DEFAULT 120 -- The minimum number of minutes to wait between sending messages
 )
 VALUES
 (

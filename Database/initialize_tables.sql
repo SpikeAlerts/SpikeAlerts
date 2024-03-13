@@ -207,7 +207,7 @@ CREATE VIEW base.alerts_w_info AS
 SELECT s.sensor_id, s.name, s.alert_id, s.sensitive, s.start_time, s.last_seen,
 	   i.pollutant, i.metric, i.thresholds, i.radius_meters,
        s.current_reading, s.avg_reading, s.max_reading,
-       map_to_health(s.current_reading, s.thresholds) as health_descriptor
+       map_to_health(s.current_reading, i.thresholds) as health_descriptor,
 	   s.geometry
 FROM base.alerted_sensors s
 INNER JOIN base.sensor_ids_w_info i ON (s.sensor_id = i.sensor_id)
