@@ -8,7 +8,7 @@ import pytz # Timezones
 # Database 
 
 # from modules import Basic_PSQL as psql
-from modules.POI import POI_Functions as poi
+from modules.POIs import POI_Functions as poi
 from modules.Sensors import Sensor_Functions as sensors
 from modules.Database.Queries import Sensor as sensor_queries
 from modules.Database.Queries import General as query
