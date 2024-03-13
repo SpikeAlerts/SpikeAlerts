@@ -21,6 +21,7 @@
 
 import os # For working with Operating System
 from dotenv import load_dotenv # Loading .env info
+
 # Add App to system path
 
 import sys
@@ -31,6 +32,7 @@ if extra_path not in sys.path:
 
 # Printing
 
+import traceback # Showing full error traceback
 from pprint import pprint # Pretty Printing
 
 # Time
@@ -43,6 +45,7 @@ import time # For Sleeping
 
 from modules.Database.db_init import db_need_init # Has the database been initialized?
 from modules.MAIN import main # The Main Loop
+from modules.Users.Send_Messages import Message_mgmt # For messaging Management that the app errored
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -111,9 +114,18 @@ else:
         # If errors?
         
         except Exception as e:
-            print(e)  # Print Error 
-            # send_texts([os.environ['LOCAL_PHONE']], ['SpikeAlerts Down']) # Message Manager
-            time.sleep(2880*60) # Sleep for two days if errored out
+        
+            print('\n~~~~~~~~~~~~~~ERROR OCURRED~~~~~~~~~~~~\n')  # Print Error 
+            
+            print(traceback.print_exc()) # Print Traceback
+            
+            # Message manager
+            
+            mgmt_message = 'SpikeAlerts Down due to ' + str(e) + '\nSleeping for 2 days'
+            Message_mgmt(mgmt_message) # Message Manager
+            
+            # Sleep for 2 days if errored out
+            time.sleep(2880*60)
             
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Finally, sleep until next regular update
