@@ -2,7 +2,7 @@ import os # For working with Operating System
 from urllib.parse import urlparse
 from dotenv import load_dotenv # Loading .env info
 
-load_dotenv('.env.secret')
+load_dotenv()
 
 # heroku psql automatically populates app config var with a DATABASE_URL. 
 # if is running remotely, parses config var into connection dict and gets DB_OPTIONS

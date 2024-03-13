@@ -48,7 +48,7 @@ from modules.MAIN import main # The Main Loop
 
 ### Load Configuration (.env)
 
-load_dotenv('.env.secret')
+load_dotenv()
 
 base_config = {} # A dictionary to store the configuration variables
 

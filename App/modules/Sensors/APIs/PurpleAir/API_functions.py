@@ -22,7 +22,7 @@ import pandas as pd
 
 ## Load Env information
 
-load_dotenv('.env.sensors.secret') # Load .env file) # Load .env file
+load_dotenv() # Load .env file) # Load .env file
 
 # '.env.sensors.secret
 
