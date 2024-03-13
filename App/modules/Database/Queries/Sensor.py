@@ -235,7 +235,7 @@ FROM "Sensor Type Information";
     
     if response[0][0] != None:
 
-        next_regular_update = response[0][0].astimezone(pytz.timezone(timezone))
+        next_regular_update = pytz.timezone(timezone).localize(response[0][0])
     else:
         print('ERROR: Cannot calculate the next regular update. Please see modules/Database/Queries/Sensor.py')
         

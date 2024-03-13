@@ -16,7 +16,7 @@ def Get_last_Daily_Log():
     '''
     This function gets the highest last_seen (only updated daily)
     
-    returns timezone aware datetime
+    returns a datetime.date
     '''
 
     cmd = sql.SQL('''SELECT MAX(date)
@@ -25,7 +25,7 @@ def Get_last_Daily_Log():
     
     response = psql.get_response(cmd)
 
-    # Unpack response into timezone aware datetime
+    # Unpack response into date
     
     if response[0][0] != None:
 
