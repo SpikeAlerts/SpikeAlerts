@@ -91,8 +91,8 @@ def Get_Users_to_message_alert(timezone):
     p.poi_id IS NOT NULL
     AND alerted = FALSE -- Not Alerted
     AND EXTRACT(dow FROM CURRENT_DATE AT TIME ZONE {}) = ANY ( days_to_contact ) -- Days to contact user
-    AND start_time < CURRENT_TIME AT TIME ZONE {} -- Current time less than Start time
-    AND end_time > CURRENT_TIME AT TIME ZONE {} -- Current time greater than Start time
+    AND start_time < (CURRENT_TIME AT TIME ZONE {})::time -- Current time less than Start time
+    AND end_time > (CURRENT_TIME AT TIME ZONE {})::time -- Current time greater than Start time
     AND last_contact + INTERVAL '1 Minutes' * message_freq <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
     ''').format(sql.Literal('{}'),
                 sql.Literal('{}'),
@@ -199,8 +199,8 @@ def Get_Users_to_message_unalert(reports_dict, timezone):
                 AND sensitive = {} -- Correct sensitivity?
                 AND poi_id = {} -- Is the user attached to this poi_id?
                 AND EXTRACT(dow FROM CURRENT_DATE AT TIME ZONE {}) = ANY ( days_to_contact ) -- Days to contact user
-                AND start_time < CURRENT_TIME AT TIME ZONE {} -- Current time less than Start time
-                AND end_time > CURRENT_TIME AT TIME ZONE {} -- Current time greater than Start time
+                AND start_time < (CURRENT_TIME AT TIME ZONE {})::time -- Current time less than Start time
+                AND end_time > (CURRENT_TIME AT TIME ZONE {})::time -- Current time greater than Start time
                 ''').format(sql.Literal(is_sensitive),
                             sql.Literal(poi_id),
                             sql.Literal(timezone),
