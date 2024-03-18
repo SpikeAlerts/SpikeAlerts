@@ -225,7 +225,7 @@ CREATE TABLE base."Users" -- Storage for all sensors
 	contact_method text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Contact_Methods/{contact_method}.py
 	api_id text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
 	sensitive boolean DEFAULT FALSE, -- True = send alerts when "Unhealthy for sensitive populations"
-	days_to_contact int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
+	days_to_contact int [] DEFAULT array[0,1,2,3,4,5,6]::int[], -- 0 = Sunday, 6 = Saturday
 	start_time time DEFAULT '08:00:00', -- The earliest time to send the user a message
 	end_time time DEFAULT '20:00:00', -- The latest time to send the user a message
 	message_freq int DEFAULT 120, -- The minimum number of minutes to wait between sending messages
@@ -242,7 +242,7 @@ INSERT INTO base."Users"
 	contact_method, -- text, -- How will we get a hold of this user? Should be a script in App/modules/Users/Contact_Methods/{contact_method}.py with a function send_messages()
 	api_id, -- text, -- This should be the identifier for wherever the contact info is stored (if not in this database)
 	sensitive, -- boolean, -- True = send alerts when "Unhealthy for sensitive populations"
-	days_to_contact, -- int [] DEFAULT array[1,2,3,4,5,6,7]::int[], -- 1 = Monday, 7 = Sunday
+	days_to_contact, -- int [] DEFAULT array[0,1,2,3,4,5,6]::int[], -- 0 = Sunday, 6 = Saturday
 	start_time, -- time, -- The earliest time to send the user a message
 	end_time, -- time, -- The latest time to send the user a message
 	message_freq -- int DEFAULT 120 -- The minimum number of minutes to wait between sending messages
@@ -253,7 +253,7 @@ VALUES
 	'Template', -- Contact Method Script name in App/modules/Users/Contact_Methods
 	1, -- Record id for external database
 	TRUE, -- Is sensitive
-	ARRAY[1,2,3,4,5,6,7]::int[], -- Anyday
+	ARRAY[0,1,2,3,4,5,6]::int[], -- Anyday
 	'00:00', -- Starting at Midnight
 	'23:59:59', -- Ending just before midnight
 	10 -- minimum 10 minute lag between messaging an ended alert and beginning a new one
