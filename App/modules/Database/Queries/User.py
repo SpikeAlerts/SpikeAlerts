@@ -93,7 +93,7 @@ def Get_Users_to_message_alert(timezone):
     AND EXTRACT(dow FROM CURRENT_DATE AT TIME ZONE {}) = ANY ( days_to_contact ) -- Days to contact user
     AND start_time < (CURRENT_TIME AT TIME ZONE {})::time -- Current time less than Start time
     AND end_time > (CURRENT_TIME AT TIME ZONE {})::time -- Current time greater than Start time
-    AND last_contact + INTERVAL '1 Minutes' * message_freq <= CURRENT_TIMESTAMP AT TIME ZONE {}; -- has the user been contacted too recently?
+    AND last_contact + INTERVAL '1 Minutes' * message_freq <= (CURRENT_TIMESTAMP AT TIME ZONE {})::timestamp; -- has the user been contacted too recently?
     ''').format(sql.Literal('{}'),
                 sql.Literal('{}'),
                 sql.Literal(timezone),

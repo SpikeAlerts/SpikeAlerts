@@ -251,7 +251,7 @@ def Update_users_after_message(user_ids, alerted, timezone):
     cmd = sql.SQL('''
     UPDATE "Users"
     SET alerted = {},
-    last_contact = CURRENT_TIMESTAMP AT TIME ZONE {}
+    last_contact = (CURRENT_TIMESTAMP AT TIME ZONE {})::timestamp
     WHERE user_id = ANY ( {} );
     ''').format(sql.Literal(alerted),
                 sql.Literal(timezone),
