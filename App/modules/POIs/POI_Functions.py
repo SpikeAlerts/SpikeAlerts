@@ -50,8 +50,8 @@ def Add_POI_pts(lats, lons):
 	        (
 	        ST_SetSRID(ST_MakePoint({}, {}), 4326)
 	        );
-        ''').format(sql.Literal(int(lon)),
-                    sql.Literal(int(lat))
+        ''').format(sql.Literal(float(lon)),
+                    sql.Literal(float(lat))
                     )
 
     psql.send_update(cmd)
