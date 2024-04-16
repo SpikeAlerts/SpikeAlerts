@@ -106,7 +106,7 @@ def Workflow(monitor_dict, timezone):
             print('\n~~~\n~~~\nWarning - expired sensors not tested. See PurpleAir/Standard for this print stmt\n~~~\n~~~\n')
 
             # Get the sensor_ids
-            is_expired = sensors_df.api_id.isin(sensor_dict['Expired'])
+            is_expired = sensors_df.api_id.isin(sensors_dict['Expired'])
             sensor_ids = sensors_df[is_expired].sensor_id.to_list()
             sensors.Flag_channel_states(sensor_ids)
             
